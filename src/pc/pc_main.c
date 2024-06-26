@@ -61,6 +61,8 @@
 #include <windows.h>
 #endif
 
+#include "saturn/saturn_models.h"
+
 OSMesg D_80339BEC;
 OSMesgQueue gSIEventMesgQueue;
 
@@ -236,6 +238,8 @@ void produce_one_frame(void) {
     CTX_EXTENT(CTX_AUDIO, buffer_audio);
 
     CTX_EXTENT(CTX_RENDER, produce_interpolation_frames_and_delay);
+
+    RefreshActiveExpressions();
 }
 
 void audio_shutdown(void) {
@@ -408,4 +412,11 @@ int main(int argc, char *argv[]) {
 
     bassh_deinit();
     return 0;
+}
+
+void send_palette_to_network() {
+    configPlayerPalette = gNetworkPlayers[0].overridePalette;
+    configCustomPalette = gNetworkPlayers[0].overridePalette;
+    configfile_save(configfile_name());
+    network_send_player_settings();
 }

@@ -30,6 +30,13 @@
 #include "macros.h"
 
 #include "game/rendering_graph_node.h"
+#include "game/object_list_processor.h"
+#include "game/level_update.h"
+#include "pc/network/network_player.h"
+#include "saturn/saturn.h"
+#include "saturn/saturn_textures.h"
+#include "saturn/saturn_colors.h"
+#include "saturn/saturn_imgui_colors.h"
 
 #define SUPPORT_CHECK(x) assert(x)
 
@@ -412,6 +419,29 @@ static void import_texture_rgba32(int tile) {
     gfx_rapi->upload_texture(rdp.loaded_texture[tile].addr, width, height);
 }
 
+/*static void import_texture_rgba16(int tile) {
+    tile = tile % RDP_TILES;
+    if (!rdp.loaded_texture[tile].addr) { return; }
+    uint8_t rgba32_buf[8192 * 2];
+
+    for (uint32_t i = 0; i < rdp.loaded_texture[tile].size_bytes; i++) {
+        uint16_t col16 = (rdp.loaded_texture[tile].addr[2 * i] << 8) | rdp.loaded_texture[tile].addr[2 * i + 1];
+        uint8_t a = (col16 >> 0) & 0x01;
+        uint8_t r = (col16 >> 11) & 0x1f;
+        uint8_t g = (col16 >> 6) & 0x1f;
+        uint8_t b = (col16 >> 1) & 0x1f;
+        rgba32_buf[4*i + 0] = SCALE_5_8(r);
+        rgba32_buf[4*i + 1] = SCALE_5_8(g);
+        rgba32_buf[4*i + 2] = SCALE_5_8(b);
+        rgba32_buf[4*i + 3] = 0xFF * (a);
+    }
+
+    uint32_t width = rdp.texture_tile.line_size_bytes / 2;
+    uint32_t height = rdp.loaded_texture[tile].size_bytes / rdp.texture_tile.line_size_bytes;
+
+    gfx_rapi->upload_texture(rgba32_buf, width, height);
+}*/
+
 static void import_texture_rgba16(int tile) {
     tile = tile % RDP_TILES;
     if (!rdp.loaded_texture[tile].addr) { return; }
@@ -754,6 +784,10 @@ static float gfx_adjust_x_for_aspect_ratio(float x) {
     return x * (4.0f / 3.0f) / ((float)gfx_current_dimensions.width / (float)gfx_current_dimensions.height);
 }
 
+bool cc_mario_cap, cc_mario_overalls, cc_mario_gloves, cc_mario_shoes, cc_mario_skin, cc_mario_hair;
+bool cc_mario_shirt, cc_mario_shoulders, cc_mario_arms, cc_mario_pelvis, cc_mario_thigh, cc_mario_calf;
+bool cc_creator_sideburn;
+
 static void OPTIMIZE_O3 gfx_sp_vertex(size_t n_vertices, size_t dest_index, const Vtx *vertices, bool luaVertexColor) {
     for (size_t i = 0; i < n_vertices; i++, dest_index++) {
         const Vtx_t *v = &vertices[i].v;
@@ -783,9 +817,117 @@ static void OPTIMIZE_O3 gfx_sp_vertex(size_t n_vertices, size_t dest_index, cons
                 rsp.lights_changed = false;
             }
 
+            int networkIndex = -1;
+            for (s32 i = 0; i < MAX_PLAYERS; i++) {
+                if (gMarioStates[i].marioObj != gCurrentObject) { continue; }
+                networkIndex = gNetworkPlayers[i].localIndex;
+            }
+
             int r = rsp.current_lights[rsp.current_num_lights - 1].col[0];
             int g = rsp.current_lights[rsp.current_num_lights - 1].col[1];
             int b = rsp.current_lights[rsp.current_num_lights - 1].col[2];
+
+            if (gCurrentObject != NULL && gMarioStates[networkIndex].marioBodyState != NULL) {
+                cc_mario_cap = (r == 0x7f && g == 0x00 && b == 0x00) | (r == 0x7E && g == 0x00 && b == 0x00);
+                cc_mario_overalls = (r == 0x00 && g == 0x00 && b == 0x7f) | (r == 0x00 && g == 0x00 && b == 0x7E);
+                cc_mario_gloves = (r == 0x00 && g == 0x7f && b == 0x00) | (r == 0x00 && g == 0x7E && b == 0x00);                                          // pain
+                cc_mario_shoes = (r == 0x39 && g == 0x0e && b == 0x07) | (r == 0x39 && g == 0xD && b == 0x07) | (r == 0x38 && g == 0xD && b == 0x07) | (r == 0x38 && g == 0x0d && b == 0x06);
+                cc_mario_skin = (r == 0x7f && g == 0x60 && b == 0x3c) | (r == 0x7E && g == 0x60 && b == 0x3C);
+                cc_mario_hair = (r == 0x39 && g == 0x03 && b == 0x00) | (r == 0x39 && g == 0x2 && b == 0x00);
+                // SPARK
+                cc_mario_shirt = (r == 0x7f && g == 0x7f && b == 0x00) | (r == 0x7E && g == 0x7E && b == 0x00);
+                cc_mario_shoulders = (r == 0x00 && g == 0x7f && b == 0x7f) | (r == 0x00 && g == 0x7E && b == 0x7E);
+                cc_mario_arms = (r == 0x00 && g == 0x7f && b == 0x40) | (r == 0x00 && g == 0x7F && b == 0x3F);
+                cc_mario_pelvis = (r == 0x7f && g == 0x00 && b == 0x7f) | (r == 0x7E && g == 0x00 && b == 0x7E);
+                cc_mario_thigh = (r == 0x7f && g == 0x00 && b == 0x40) | (r == 0x7F && g == 0x00 && b == 0x3F);
+                cc_mario_calf = (r == 0x40 && g == 0x00 && b == 0x7f) | (r == 0x3F && g == 0x00 && b == 0x7F);
+                // Extras
+                cc_creator_sideburn = (r == 0x73 && g == 0x6 && b == 0x0) | (r == 0x73 && g == 0x5 && b == 0x0);
+
+                if (cc_mario_cap) {
+                    show_cap = true;
+                    r = (networkIndex == 0) ? defaultColorHat.red[1] : gNetworkPlayers[networkIndex].overridePalette.parts[1][0] * gMarioStates[networkIndex].marioBodyState->shadeR / 255.0f;
+                    g = (networkIndex == 0) ? defaultColorHat.green[1] : gNetworkPlayers[networkIndex].overridePalette.parts[1][1] * gMarioStates[networkIndex].marioBodyState->shadeG / 255.0f;
+                    b = (networkIndex == 0) ? defaultColorHat.blue[1] : gNetworkPlayers[networkIndex].overridePalette.parts[1][2] * gMarioStates[networkIndex].marioBodyState->shadeB / 255.0f;
+                }
+                if (cc_mario_overalls) {
+                    show_overalls = true;
+                    r = (networkIndex == 0) ? defaultColorOveralls.red[1] : gNetworkPlayers[networkIndex].overridePalette.parts[0][0] * gMarioStates[networkIndex].marioBodyState->shadeR / 255.0f;
+                    g = (networkIndex == 0) ? defaultColorOveralls.green[1] : gNetworkPlayers[networkIndex].overridePalette.parts[0][1] * gMarioStates[networkIndex].marioBodyState->shadeG / 255.0f;
+                    b = (networkIndex == 0) ? defaultColorOveralls.blue[1] : gNetworkPlayers[networkIndex].overridePalette.parts[0][2] * gMarioStates[networkIndex].marioBodyState->shadeB / 255.0f;
+                }
+                if (cc_mario_gloves) {
+                    show_gloves = true;
+                    r = (networkIndex == 0) ? defaultColorGloves.red[1] : gNetworkPlayers[networkIndex].overridePalette.parts[2][0] * gMarioStates[networkIndex].marioBodyState->shadeR / 255.0f;
+                    g = (networkIndex == 0) ? defaultColorGloves.green[1] : gNetworkPlayers[networkIndex].overridePalette.parts[2][1] * gMarioStates[networkIndex].marioBodyState->shadeG / 255.0f;
+                    b = (networkIndex == 0) ? defaultColorGloves.blue[1] : gNetworkPlayers[networkIndex].overridePalette.parts[2][2] * gMarioStates[networkIndex].marioBodyState->shadeB / 255.0f;
+                }
+                if (cc_mario_shoes) {
+                    show_shoes = true;
+                    r = (networkIndex == 0) ? defaultColorShoes.red[1] : gNetworkPlayers[networkIndex].overridePalette.parts[3][0] * gMarioStates[networkIndex].marioBodyState->shadeR / 255.0f;
+                    g = (networkIndex == 0) ? defaultColorShoes.green[1] : gNetworkPlayers[networkIndex].overridePalette.parts[3][1] * gMarioStates[networkIndex].marioBodyState->shadeG / 255.0f;
+                    b = (networkIndex == 0) ? defaultColorShoes.blue[1] : gNetworkPlayers[networkIndex].overridePalette.parts[3][2] * gMarioStates[networkIndex].marioBodyState->shadeB / 255.0f;
+                }
+                if (cc_mario_skin) {
+                    show_skin = true;
+                    r = (networkIndex == 0) ? defaultColorSkin.red[1] : gNetworkPlayers[networkIndex].overridePalette.parts[5][0] * gMarioStates[networkIndex].marioBodyState->shadeR / 255.0f;
+                    g = (networkIndex == 0) ? defaultColorSkin.green[1] : gNetworkPlayers[networkIndex].overridePalette.parts[5][1] * gMarioStates[networkIndex].marioBodyState->shadeG / 255.0f;
+                    b = (networkIndex == 0) ? defaultColorSkin.blue[1] : gNetworkPlayers[networkIndex].overridePalette.parts[5][2] * gMarioStates[networkIndex].marioBodyState->shadeB / 255.0f;
+                }
+                if (cc_mario_hair) {
+                    show_hair = true;
+                    r = (networkIndex == 0) ? defaultColorHair.red[1] : gNetworkPlayers[networkIndex].overridePalette.parts[4][0] * gMarioStates[networkIndex].marioBodyState->shadeR / 255.0f;
+                    g = (networkIndex == 0) ? defaultColorHair.green[1] : gNetworkPlayers[networkIndex].overridePalette.parts[4][1] * gMarioStates[networkIndex].marioBodyState->shadeG / 255.0f;
+                    b = (networkIndex == 0) ? defaultColorHair.blue[1] : gNetworkPlayers[networkIndex].overridePalette.parts[4][2] * gMarioStates[networkIndex].marioBodyState->shadeB / 255.0f;
+                }
+                if (cc_mario_shirt) {
+                    show_shirt = true;
+                    r = (networkIndex == 0) ? sparkColorShirt.red[1] : gNetworkPlayers[networkIndex].overridePalette.parts[1][0] * gMarioStates[networkIndex].marioBodyState->shadeR / 255.0f;
+                    g = (networkIndex == 0) ? sparkColorShirt.green[1] : gNetworkPlayers[networkIndex].overridePalette.parts[1][1] * gMarioStates[networkIndex].marioBodyState->shadeG / 255.0f;
+                    b = (networkIndex == 0) ? sparkColorShirt.blue[1] : gNetworkPlayers[networkIndex].overridePalette.parts[1][2] * gMarioStates[networkIndex].marioBodyState->shadeB / 255.0f;
+                }
+                if (cc_mario_shoulders) {
+                    show_shoulders = true;
+                    r = (networkIndex == 0) ? sparkColorShoulders.red[1] : gNetworkPlayers[networkIndex].overridePalette.parts[1][0] * gMarioStates[networkIndex].marioBodyState->shadeR / 255.0f;
+                    g = (networkIndex == 0) ? sparkColorShoulders.green[1] : gNetworkPlayers[networkIndex].overridePalette.parts[1][1] * gMarioStates[networkIndex].marioBodyState->shadeG / 255.0f;
+                    b = (networkIndex == 0) ? sparkColorShoulders.blue[1] : gNetworkPlayers[networkIndex].overridePalette.parts[1][2] * gMarioStates[networkIndex].marioBodyState->shadeB / 255.0f;
+                }
+                if (cc_mario_arms) {
+                    show_arms = true;
+                    r = (networkIndex == 0) ? sparkColorArms.red[1] : gNetworkPlayers[networkIndex].overridePalette.parts[1][0] * gMarioStates[networkIndex].marioBodyState->shadeR / 255.0f;
+                    g = (networkIndex == 0) ? sparkColorArms.green[1] : gNetworkPlayers[networkIndex].overridePalette.parts[1][1] * gMarioStates[networkIndex].marioBodyState->shadeG / 255.0f;
+                    b = (networkIndex == 0) ? sparkColorArms.blue[1] : gNetworkPlayers[networkIndex].overridePalette.parts[1][2] * gMarioStates[networkIndex].marioBodyState->shadeB / 255.0f;
+                }
+                if (cc_mario_pelvis) {
+                    show_pelvis = true;
+                    r = (networkIndex == 0) ? sparkColorPelvis.red[1] : gNetworkPlayers[networkIndex].overridePalette.parts[0][0] * gMarioStates[networkIndex].marioBodyState->shadeR / 255.0f;
+                    g = (networkIndex == 0) ? sparkColorPelvis.green[1] : gNetworkPlayers[networkIndex].overridePalette.parts[0][1] * gMarioStates[networkIndex].marioBodyState->shadeG / 255.0f;
+                    b = (networkIndex == 0) ? sparkColorPelvis.blue[1] : gNetworkPlayers[networkIndex].overridePalette.parts[0][2] * gMarioStates[networkIndex].marioBodyState->shadeB / 255.0f;
+                }
+                if (cc_mario_thigh) {
+                    show_thigh = true;
+                    r = (networkIndex == 0) ? sparkColorThigh.red[1] : gNetworkPlayers[networkIndex].overridePalette.parts[0][0] * gMarioStates[networkIndex].marioBodyState->shadeR / 255.0f;
+                    g = (networkIndex == 0) ? sparkColorThigh.green[1] : gNetworkPlayers[networkIndex].overridePalette.parts[0][1] * gMarioStates[networkIndex].marioBodyState->shadeG / 255.0f;
+                    b = (networkIndex == 0) ? sparkColorThigh.blue[1] : gNetworkPlayers[networkIndex].overridePalette.parts[0][2] * gMarioStates[networkIndex].marioBodyState->shadeB / 255.0f;
+                }
+                if (cc_mario_calf) {
+                    show_calf = true;
+                    r = (networkIndex == 0) ? sparkColorCalf.red[1] : gNetworkPlayers[networkIndex].overridePalette.parts[0][0] * gMarioStates[networkIndex].marioBodyState->shadeR / 255.0f;
+                    g = (networkIndex == 0) ? sparkColorCalf.green[1] : gNetworkPlayers[networkIndex].overridePalette.parts[0][1] * gMarioStates[networkIndex].marioBodyState->shadeG / 255.0f;
+                    b = (networkIndex == 0) ? sparkColorCalf.blue[1] : gNetworkPlayers[networkIndex].overridePalette.parts[0][2] * gMarioStates[networkIndex].marioBodyState->shadeB / 255.0f;
+                }
+
+                spark_enabled = (show_shirt || show_arms || show_shoulders || show_pelvis || show_thigh || show_calf);
+
+                // Extras
+
+                if (cc_creator_sideburn) {
+                    show_hair = true;
+                    r = (networkIndex == 0) ? defaultColorHair.red[1] * 2 : gNetworkPlayers[networkIndex].overridePalette.parts[4][0] * gMarioStates[networkIndex].marioBodyState->shadeR / 255.0f;
+                    g = (networkIndex == 0) ? defaultColorHair.green[1] * 2 : gNetworkPlayers[networkIndex].overridePalette.parts[4][1] * gMarioStates[networkIndex].marioBodyState->shadeG / 255.0f;
+                    b = (networkIndex == 0) ? defaultColorHair.blue[1] * 2 : gNetworkPlayers[networkIndex].overridePalette.parts[4][2] * gMarioStates[networkIndex].marioBodyState->shadeB / 255.0f;
+                }
+            }
 
             for (int32_t i = 0; i < rsp.current_num_lights - 1; i++) {
                 float intensity = 0;
@@ -794,9 +936,72 @@ static void OPTIMIZE_O3 gfx_sp_vertex(size_t n_vertices, size_t dest_index, cons
                 intensity += vn->n[2] * rsp.current_lights_coeffs[i][2];
                 intensity /= 127.0f;
                 if (intensity > 0.0f) {
-                    r += intensity * rsp.current_lights[i].col[0];
-                    g += intensity * rsp.current_lights[i].col[1];
-                    b += intensity * rsp.current_lights[i].col[2];
+                    if (gCurrentObject != NULL && gMarioStates[networkIndex].marioBodyState != NULL) {
+                        if (cc_mario_cap) {
+                            r += intensity * (gNetworkPlayers[networkIndex].overridePalette.parts[1][0] * gMarioStates[networkIndex].marioBodyState->lightR / 255.0f);
+                            g += intensity * (gNetworkPlayers[networkIndex].overridePalette.parts[1][1] * gMarioStates[networkIndex].marioBodyState->lightG / 255.0f);
+                            b += intensity * (gNetworkPlayers[networkIndex].overridePalette.parts[1][2] * gMarioStates[networkIndex].marioBodyState->lightB / 255.0f);
+                        } else if (cc_mario_overalls) {
+                            r += intensity * (gNetworkPlayers[networkIndex].overridePalette.parts[0][0] * gMarioStates[networkIndex].marioBodyState->lightR / 255.0f);
+                            g += intensity * (gNetworkPlayers[networkIndex].overridePalette.parts[0][1] * gMarioStates[networkIndex].marioBodyState->lightG / 255.0f);
+                            b += intensity * (gNetworkPlayers[networkIndex].overridePalette.parts[0][2] * gMarioStates[networkIndex].marioBodyState->lightB / 255.0f);
+                        } else if (cc_mario_gloves) {
+                            r += intensity * (gNetworkPlayers[networkIndex].overridePalette.parts[2][0] * gMarioStates[networkIndex].marioBodyState->lightR / 255.0f);
+                            g += intensity * (gNetworkPlayers[networkIndex].overridePalette.parts[2][1] * gMarioStates[networkIndex].marioBodyState->lightG / 255.0f);
+                            b += intensity * (gNetworkPlayers[networkIndex].overridePalette.parts[2][2] * gMarioStates[networkIndex].marioBodyState->lightB / 255.0f);
+                        } else if (cc_mario_shoes) {
+                            r += intensity * (gNetworkPlayers[networkIndex].overridePalette.parts[3][0] * gMarioStates[networkIndex].marioBodyState->lightR / 255.0f);
+                            g += intensity * (gNetworkPlayers[networkIndex].overridePalette.parts[3][1] * gMarioStates[networkIndex].marioBodyState->lightG / 255.0f);
+                            b += intensity * (gNetworkPlayers[networkIndex].overridePalette.parts[3][2] * gMarioStates[networkIndex].marioBodyState->lightB / 255.0f);
+                        } else if (cc_mario_skin) {
+                            r += intensity * (gNetworkPlayers[networkIndex].overridePalette.parts[5][0] * gMarioStates[networkIndex].marioBodyState->lightR / 255.0f);
+                            g += intensity * (gNetworkPlayers[networkIndex].overridePalette.parts[5][1] * gMarioStates[networkIndex].marioBodyState->lightG / 255.0f);
+                            b += intensity * (gNetworkPlayers[networkIndex].overridePalette.parts[5][2] * gMarioStates[networkIndex].marioBodyState->lightB / 255.0f);
+                        } else if (cc_mario_hair) {
+                            r += intensity * (gNetworkPlayers[networkIndex].overridePalette.parts[4][0] * gMarioStates[networkIndex].marioBodyState->lightR / 255.0f);
+                            g += intensity * (gNetworkPlayers[networkIndex].overridePalette.parts[4][1] * gMarioStates[networkIndex].marioBodyState->lightG / 255.0f);
+                            b += intensity * (gNetworkPlayers[networkIndex].overridePalette.parts[4][2] * gMarioStates[networkIndex].marioBodyState->lightB / 255.0f);
+                        // SPARK
+                        } else if (cc_mario_shirt) {
+                            r += intensity * ((networkIndex == 0) ? sparkColorShirt.red[0] : gNetworkPlayers[networkIndex].overridePalette.parts[1][0] * gMarioStates[networkIndex].marioBodyState->lightR / 255.0f);
+                            g += intensity * ((networkIndex == 0) ? sparkColorShirt.green[0] : gNetworkPlayers[networkIndex].overridePalette.parts[1][1] * gMarioStates[networkIndex].marioBodyState->lightG / 255.0f);
+                            b += intensity * ((networkIndex == 0) ? sparkColorShirt.blue[0] : gNetworkPlayers[networkIndex].overridePalette.parts[1][2] * gMarioStates[networkIndex].marioBodyState->lightB / 255.0f);
+                        } else if (cc_mario_shoulders) {
+                            r += intensity * ((networkIndex == 0) ? sparkColorShoulders.red[0] : gNetworkPlayers[networkIndex].overridePalette.parts[1][0] * gMarioStates[networkIndex].marioBodyState->lightR / 255.0f);
+                            g += intensity * ((networkIndex == 0) ? sparkColorShoulders.green[0] : gNetworkPlayers[networkIndex].overridePalette.parts[1][1] * gMarioStates[networkIndex].marioBodyState->lightG / 255.0f);
+                            b += intensity * ((networkIndex == 0) ? sparkColorShoulders.blue[0] : gNetworkPlayers[networkIndex].overridePalette.parts[1][2] * gMarioStates[networkIndex].marioBodyState->lightB / 255.0f);
+                        } else if (cc_mario_arms) {
+                            r += intensity * ((networkIndex == 0) ? sparkColorArms.red[0] : gNetworkPlayers[networkIndex].overridePalette.parts[1][0] * gMarioStates[networkIndex].marioBodyState->lightR / 255.0f);
+                            g += intensity * ((networkIndex == 0) ? sparkColorArms.green[0] : gNetworkPlayers[networkIndex].overridePalette.parts[1][1] * gMarioStates[networkIndex].marioBodyState->lightG / 255.0f);
+                            b += intensity * ((networkIndex == 0) ? sparkColorArms.blue[0] : gNetworkPlayers[networkIndex].overridePalette.parts[1][2] * gMarioStates[networkIndex].marioBodyState->lightB / 255.0f);
+                        } else if (cc_mario_pelvis) {
+                            r += intensity * ((networkIndex == 0) ? sparkColorPelvis.red[0] : gNetworkPlayers[networkIndex].overridePalette.parts[0][0] * gMarioStates[networkIndex].marioBodyState->lightR / 255.0f);
+                            g += intensity * ((networkIndex == 0) ? sparkColorPelvis.green[0] : gNetworkPlayers[networkIndex].overridePalette.parts[0][1] * gMarioStates[networkIndex].marioBodyState->lightG / 255.0f);
+                            b += intensity * ((networkIndex == 0) ? sparkColorPelvis.blue[0] : gNetworkPlayers[networkIndex].overridePalette.parts[0][2] * gMarioStates[networkIndex].marioBodyState->lightB / 255.0f);
+                        } else if (cc_mario_thigh) {
+                            r += intensity * ((networkIndex == 0) ? sparkColorThigh.red[0] : gNetworkPlayers[networkIndex].overridePalette.parts[0][0] * gMarioStates[networkIndex].marioBodyState->lightR / 255.0f);
+                            g += intensity * ((networkIndex == 0) ? sparkColorThigh.green[0] : gNetworkPlayers[networkIndex].overridePalette.parts[0][1] * gMarioStates[networkIndex].marioBodyState->lightG / 255.0f);
+                            b += intensity * ((networkIndex == 0) ? sparkColorThigh.blue[0] : gNetworkPlayers[networkIndex].overridePalette.parts[0][2] * gMarioStates[networkIndex].marioBodyState->lightB / 255.0f);
+                        } else if (cc_mario_calf) {
+                            r += intensity * ((networkIndex == 0) ? sparkColorCalf.red[0] : gNetworkPlayers[networkIndex].overridePalette.parts[0][0] * gMarioStates[networkIndex].marioBodyState->lightR / 255.0f);
+                            g += intensity * ((networkIndex == 0) ? sparkColorCalf.green[0] : gNetworkPlayers[networkIndex].overridePalette.parts[0][1] * gMarioStates[networkIndex].marioBodyState->lightG / 255.0f);
+                            b += intensity * ((networkIndex == 0) ? sparkColorCalf.blue[0] : gNetworkPlayers[networkIndex].overridePalette.parts[0][2] * gMarioStates[networkIndex].marioBodyState->lightB / 255.0f);
+                        // Extras
+                        } else if (cc_creator_sideburn) {
+                            // Solid black (main color)
+                            r += intensity * 0;
+                            g += intensity * 0;
+                            b += intensity * 0;
+                        } else {
+                            r += intensity * rsp.current_lights[i].col[0];
+                            g += intensity * rsp.current_lights[i].col[1];
+                            b += intensity * rsp.current_lights[i].col[2];
+                        }
+                    } else {
+                        r += intensity * rsp.current_lights[i].col[0];
+                        g += intensity * rsp.current_lights[i].col[1];
+                        b += intensity * rsp.current_lights[i].col[2];
+                    }
                 }
             }
 
@@ -1240,7 +1445,7 @@ static void gfx_dp_set_scissor(UNUSED uint32_t mode, uint32_t ulx, uint32_t uly,
 }
 
 static void gfx_dp_set_texture_image(UNUSED uint32_t format, uint32_t size, UNUSED uint32_t width, const void* addr) {
-    rdp.texture_to_load.addr = addr;
+    rdp.texture_to_load.addr = saturn_bind_texture(addr, gCurrentObject);
     rdp.texture_to_load.siz = size;
 }
 
@@ -1571,6 +1776,9 @@ static void OPTIMIZE_O3 gfx_run_dl(Gfx* cmd) {
 
         switch (opcode) {
             // RSP commands:
+            case G_SETOBJ:
+                gCurrentObject = (struct Object*)seg_addr(cmd->words.w1);
+                break;
             case G_MTX:
 #ifdef F3DEX_GBI_2
                 gfx_sp_matrix(C0(0, 8) ^ G_MTX_PUSH, (const int32_t *) seg_addr(cmd->words.w1));
@@ -1934,6 +2142,7 @@ static void OPTIMIZE_O3 djui_gfx_dp_execute_clipping(void) {
     }
 }
 
+//saturn
 static void OPTIMIZE_O3 djui_gfx_dp_execute_override(void) {
     if (!sDjuiOverride) { return; }
     sDjuiOverride = false;

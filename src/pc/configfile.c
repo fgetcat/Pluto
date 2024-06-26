@@ -68,7 +68,7 @@ ConfigWindow configWindow       = {
     .settings_changed = false,
     .msaa = 0,
 };
-unsigned int configFiltering    = 2;          // 0=force nearest, 1=linear, 2=three-point
+unsigned int configFiltering    = 1;          // 0=force nearest, 1=linear, 2=three-point
 unsigned int configMasterVolume = 80; // 0 - MAX_VOLUME
 unsigned int configMusicVolume = MAX_VOLUME;
 unsigned int configSfxVolume = MAX_VOLUME;
@@ -81,8 +81,8 @@ unsigned int configKeyX[MAX_BINDS]          = { 0x0017,     0x1002,     VK_INVAL
 unsigned int configKeyY[MAX_BINDS]          = { 0x0032,     0x1003,     VK_INVALID };
 unsigned int configKeyStart[MAX_BINDS]      = { 0x0039,     0x1006,     VK_INVALID };
 unsigned int configKeyL[MAX_BINDS]          = { 0x002A,     0x1009,     0x1104     };
-unsigned int configKeyR[MAX_BINDS]          = { 0x0036,     0x100A,     0x101B     };
-unsigned int configKeyZ[MAX_BINDS]          = { 0x0025,     0x1007,     0x101A     };
+unsigned int configKeyR[MAX_BINDS]          = { 0x0012,     0x100A,     0x101B     };
+unsigned int configKeyZ[MAX_BINDS]          = { 0x002A,     0x1007,     0x101A     };
 unsigned int configKeyCUp[MAX_BINDS]        = { 0x0148,     VK_INVALID, VK_INVALID };
 unsigned int configKeyCDown[MAX_BINDS]      = { 0x0150,     VK_INVALID, VK_INVALID };
 unsigned int configKeyCLeft[MAX_BINDS]      = { 0x014B,     VK_INVALID, VK_INVALID };
@@ -104,17 +104,17 @@ unsigned int configKeyDisconnect[MAX_BINDS] = { VK_INVALID, VK_INVALID, VK_INVAL
 unsigned int configStickDeadzone = 16; // 16*DEADZONE_STEP=4960 (the original default deadzone)
 unsigned int configRumbleStrength = 50;
 // better camera settings
-unsigned int configCameraXSens   = 50;
-unsigned int configCameraYSens   = 50;
+unsigned int configCameraXSens   = 68;
+unsigned int configCameraYSens   = 68;
 unsigned int configCameraAggr    = 0;
 unsigned int configCameraPan     = 0;
 unsigned int configCameraDegrade = 50; // 0 - 100%
-bool         configCameraInvertX = false;
-bool         configCameraInvertY = true;
-bool         configEnableCamera  = false;
-bool         configCameraAnalog  = false;
+bool         configCameraInvertX = true;
+bool         configCameraInvertY = false;
+bool         configEnableCamera  = true;
+bool         configCameraAnalog  = true;
 bool         configCameraCUp     = false;
-bool         configCameraMouse   = false;
+bool         configCameraMouse   = true;
 // coop-specific
 bool         configSkipIntro                      = 0;
 bool         configBubbleDeath                    = true;
@@ -362,6 +362,7 @@ static void moderator_write(FILE* file) {
     }
 }
 
+#include "saturn/saturn_models.h"
 static void dynos_pack_read(char** tokens, int numTokens) {
     if (numTokens < 3) { return; }
     char fullPackName[256] = { 0 };
@@ -376,7 +377,7 @@ static void dynos_pack_read(char** tokens, int numTokens) {
     for (int i = 0; i < packCount; i++) {
         const char* pack = dynos_pack_get_name(i);
         if (!strcmp(fullPackName, pack)) {
-            dynos_pack_set_enabled(i, enabled);
+            LoadModelData(i, enabled);
             break;
         }
     }
@@ -640,7 +641,7 @@ void configfile_save(const char *filename) {
         return;
     }
 
-    printf("Saving configuration to '%s'\n", filename);
+    //printf("Saving configuration to '%s'\n", filename);
 
     for (unsigned int i = 0; i < ARRAY_LEN(options); i++) {
         const struct ConfigOption *option = &options[i];

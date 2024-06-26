@@ -24,6 +24,8 @@
 #include "game/level_geo.h"
 #include "game/first_person_cam.h"
 
+#include "saturn/saturn.h"
+
 static struct DateTime sDateTime;
 
 ///
@@ -144,7 +146,7 @@ void hud_show(void) {
 }
 
 bool hud_is_hidden(void) {
-    return gOverrideHideHud;
+    return gOverrideHideHud || !enable_hud;
 }
 
 s32 hud_get_value(enum HudDisplayValue type) {

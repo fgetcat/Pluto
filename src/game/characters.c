@@ -13,6 +13,7 @@
 #include "engine/graph_node.h"
 #include "characters_bass_sounds.h"
 #include "pc/lua/smlua.h"
+#include "saturn/saturn.h"
 
 extern Gfx mario_cap_seg3_dl_03022F48[];
 extern Gfx mario_cap_m_logo_decal[];
@@ -1420,7 +1421,7 @@ struct Character gCharacters[CT_MAX] = {
 };
 
 const struct PlayerPalette DEFAULT_MARIO_PALETTE =
-{{{ 0x00, 0x00, 0xff }, { 0xff, 0x00, 0x00 }, { 0xff, 0xff, 0xff }, { 0x72, 0x1c, 0x0e }, { 0x73, 0x06, 0x00 }, { 0xfe, 0xc1, 0x79 }, { 0xff, 0x00, 0x00 }}};
+{{{ 0x00, 0x00, 0xff }, { 0xff, 0x00, 0x00 }, { 0x00, 0xff, 0x00 }, { 0x72, 0x1c, 0x0e }, { 0x73, 0x06, 0x00 }, { 0xfe, 0xc1, 0x79 }, { 0xff, 0x00, 0x00 }}};
 
 const struct PlayerPalette gPalettePresets[PALETTE_PRESET_MAX] = {
 /*  ---- PANTS -----      ---- SHIRT -----      ---- GLOVES ----      ---- SHOES -----      ----- HAIR -----      ----- SKIN -----      ----- CAP ------  */
@@ -1533,7 +1534,7 @@ struct Character* get_character(struct MarioState* m) {
 }
 
 static s32 get_character_sound(struct MarioState* m, enum CharacterSound characterSound) {
-    if (m == NULL || m->marioObj == NULL) { return 0; }
+    if (m == NULL || m->marioObj == NULL || freeze_camera) { return 0; }
 
     s32 override = 0;
     if (smlua_call_event_hooks_mario_character_sound_param_ret_int(HOOK_CHARACTER_SOUND, m, characterSound, &override)) {
@@ -1547,6 +1548,7 @@ static s32 get_character_sound(struct MarioState* m, enum CharacterSound charact
 }
 
 static void play_character_sound_internal(struct MarioState *m, enum CharacterSound characterSound, u32 offset, u32 flags) {
+    if (freeze_camera) return;
     if (m != NULL && (m->flags & flags) == 0) {
         s32 sound = get_character_sound(m, characterSound);
         if (sound != 0) {

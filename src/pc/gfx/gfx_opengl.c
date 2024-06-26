@@ -40,6 +40,8 @@
 #include "gfx_cc.h"
 #include "gfx_rendering_api.h"
 
+#include "saturn/saturn_imgui.h"
+
 #define TEX_CACHE_STEP 512
 
 struct ShaderProgram {
@@ -706,6 +708,12 @@ static void gfx_opengl_on_resize(void) {
 static void gfx_opengl_start_frame(void) {
     frame_count++;
 
+    if (configWindow.msaa > 0) {
+        glEnable(GL_MULTISAMPLE);
+    } else {
+        glDisable(GL_MULTISAMPLE);
+    }
+
     glDisable(GL_SCISSOR_TEST);
     glDepthMask(GL_TRUE); // Must be set to clear Z-buffer
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -714,6 +722,7 @@ static void gfx_opengl_start_frame(void) {
 }
 
 static void gfx_opengl_end_frame(void) {
+    imgui_update();
 }
 
 static void gfx_opengl_finish_render(void) {

@@ -14,6 +14,7 @@
 #include "menu/file_select.h"
 #include "src/pc/djui/djui.h"
 #include "src/pc/djui/djui_panel_pause.h"
+#include "src/saturn/saturn.h"
 
 static int keyboard_buttons_down;
 
@@ -37,7 +38,7 @@ bool keyboard_on_key_down(int scancode) {
     djui_panel_pause_disconnect_key_update(scancode);
 
     // see if interactable captures this scancode
-    if (djui_interactable_on_key_down(scancode)) {
+    if (djui_interactable_on_key_down(scancode) && allow_game_input) {
         keyboard_lastkey = scancode;
         return FALSE;
     }
@@ -111,13 +112,23 @@ static void keyboard_read(OSContPad *pad) {
     const u32 xstick = keyboard_buttons_down & STICK_XMASK;
     const u32 ystick = keyboard_buttons_down & STICK_YMASK;
     if (xstick == STICK_LEFT)
-        pad->stick_x = -128;
+        pad->stick_x = -walkpoint_speed + 1;
     else if (xstick == STICK_RIGHT)
-        pad->stick_x = 127;
+        pad->stick_x = walkpoint_speed;
     if (ystick == STICK_DOWN)
-        pad->stick_y = -128;
+        pad->stick_y = -walkpoint_speed + 1;
     else if (ystick == STICK_UP)
-        pad->stick_y = 127;
+        pad->stick_y = walkpoint_speed;
+
+    // Diagonal movements need to be slowed
+    if (walkpoint_speed < 100) {
+        if (xstick & STICK_LEFT || xstick & STICK_RIGHT) {
+            if (ystick & STICK_DOWN || ystick & STICK_UP) {
+                pad->stick_x = pad->stick_x / 1.25f;
+                pad->stick_y = pad->stick_y / 1.25f;
+            }
+        }
+    }
 }
 
 static u32 keyboard_rawkey(void) {

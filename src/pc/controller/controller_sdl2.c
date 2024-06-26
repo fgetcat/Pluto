@@ -30,6 +30,9 @@
 #include "pc/djui/djui_panel_pause.h"
 #include "pc/djui/djui_hud_utils.h"
 
+#include "saturn/saturn.h"
+#include "saturn/saturn_imgui.h"
+
 #define MAX_JOYBINDS 32
 #define MAX_MOUSEBUTTONS 8 // arbitrary
 #define MAX_JOYBUTTONS 32  // arbitrary; includes virtual keys for triggers
@@ -177,7 +180,7 @@ static void controller_sdl_read(OSContPad *pad) {
     }
 
     if (!gDjuiHudLockMouse) {
-        if (newcam_mouse == 1 && gMenuMode == -1 && !gDjuiInMainMenu && !gDjuiChatBoxFocus && !gDjuiConsoleFocus) {
+        if (newcam_mouse == 1 && gMenuMode == -1 && !gDjuiInMainMenu && !gDjuiChatBoxFocus && !gDjuiConsoleFocus && !show_menu) {
             SDL_SetRelativeMouseMode(SDL_TRUE);
             ignore_lock = true;
         } else {
@@ -188,7 +191,7 @@ static void controller_sdl_read(OSContPad *pad) {
 
     u32 mouse = SDL_GetRelativeMouseState(&mouse_x, &mouse_y);
 
-    if (!gInteractableOverridePad) {
+    if (!gInteractableOverridePad && !show_menu) {
         for (u32 i = 0; i < num_mouse_binds; ++i)
             if (mouse & SDL_BUTTON(mouse_binds[i][0]))
                 pad->button |= mouse_binds[i][1];
@@ -197,7 +200,7 @@ static void controller_sdl_read(OSContPad *pad) {
     last_mouse = (mouse_buttons ^ mouse) & mouse;
     mouse_buttons = mouse;
 
-    if (!ignore_lock && gMenuMode == -1 && !gDjuiInMainMenu && !gDjuiChatBoxFocus && !gDjuiConsoleFocus) {
+    if (!ignore_lock && gMenuMode == -1 && !gDjuiInMainMenu && !gDjuiChatBoxFocus && !gDjuiConsoleFocus && !show_menu) {
         SDL_SetRelativeMouseMode(gDjuiHudLockMouse ? SDL_TRUE : SDL_FALSE);
     }
 
@@ -286,6 +289,20 @@ static void controller_sdl_read(OSContPad *pad) {
         pad->ext_stick_x = rightx / 0x100;
         int stick_y = -righty / 0x100;
         pad->ext_stick_y = stick_y == 128 ? 127 : stick_y;
+    }
+
+    float newVal = (walkpoint_speed / 127.f);
+    pad->stick_x = pad->stick_x * newVal;
+    pad->stick_y = pad->stick_y * newVal;
+
+    // Diagonal movements need to be slowed
+    if (walkpoint_speed < 100) {
+        if (xstick & STICK_LEFT || xstick & STICK_RIGHT) {
+            if (ystick & STICK_DOWN || ystick & STICK_UP) {
+                pad->stick_x = pad->stick_x / 1.25f;
+                pad->stick_y = pad->stick_y / 1.25f;
+            }
+        }
     }
 }
 

@@ -17,6 +17,9 @@
 #include "game/skybox.h"
 #include "game/first_person_cam.h"
 #include "course_table.h"
+#include "object_list_processor.h"
+
+#include "saturn/saturn_colors.h"
 
 /**
  * This file contains the code that processes the scene graph for rendering.
@@ -781,14 +784,25 @@ static void geo_process_billboard(struct GraphNodeBillboard *node) {
     gMatStackIndex--;
 }
 
+static Gfx* create_object_dl(Gfx* dl) {
+    Gfx* gfx = alloc_display_list(sizeof(Gfx) * 3);
+    Gfx* head = gfx;
+    gSPSetObject(head++, gCurrentObject);
+    gSPDisplayList(head++, dl);
+    gSPEndDisplayList(head++);
+    return gfx;
+}
+
 /**
  * Process a display list node. It draws a display list without first pushing
  * a transformation on the stack, so all transformations are inherited from the
  * parent node. It processes its children if it has them.
  */
 static void geo_process_display_list(struct GraphNodeDisplayList *node) {
+    if (auto_chroma && gCurGraphNodeObject != &gMarioState->marioObj->header.gfx) return;
+
     if (node->displayList != NULL) {
-        geo_append_display_list(node->displayList, node->node.flags >> 8);
+        geo_append_display_list(create_object_dl(node->displayList), node->node.flags >> 8);
     }
     if (node->node.children != NULL) {
         geo_process_node_and_siblings(node->node.children);
@@ -800,6 +814,8 @@ static void geo_process_display_list(struct GraphNodeDisplayList *node) {
  * the list is generated on the fly by a function.
  */
 static void geo_process_generated_list(struct GraphNodeGenerated *node) {
+    if (auto_chroma && gCurGraphNodeObject != &gMarioState->marioObj->header.gfx) return;
+
     if (node->fnNode.func != NULL) {
         Gfx *list = node->fnNode.func(GEO_CONTEXT_RENDER, &node->fnNode.node,
                                      (struct DynamicPool *) gMatStack[gMatStackIndex]);
@@ -851,7 +867,7 @@ static void geo_process_background(struct GraphNodeBackground *node) {
 
         gDPPipeSync(gfx++);
         gDPSetCycleType(gfx++, G_CYC_FILL);
-        gDPSetFillColor(gfx++, node->background);
+        gDPSetFillColor(gfx++, (auto_chroma) ? 0x07C1 : node->background);
         gDPFillRectangle(gfx++, GFX_DIMENSIONS_RECT_FROM_LEFT_EDGE(0), BORDER_HEIGHT,
         GFX_DIMENSIONS_RECT_FROM_RIGHT_EDGE(0) - 1, SCREEN_HEIGHT - BORDER_HEIGHT - 1);
         gDPPipeSync(gfx++);
@@ -939,12 +955,30 @@ static void geo_process_animated_part(struct GraphNodeAnimatedPart *node) {
         gCurGraphNodeMarioState->minimumBoneY = fmin(gCurGraphNodeMarioState->minimumBoneY, translated[1] - gCurGraphNodeMarioState->marioObj->header.gfx.pos[1]);
     }
     if (node->displayList != NULL) {
-        geo_append_display_list(node->displayList, node->node.flags >> 8);
+        geo_append_display_list(create_object_dl(node->displayList), node->node.flags >> 8);
     }
     if (node->node.children != NULL) {
         geo_process_node_and_siblings(node->node.children);
     }
     gMatStackIndex--;
+}
+
+/**
+ * Render an animated part. The current animation state is not part of the node
+ * but set in global variables. If an animated part is skipped, everything afterwards desyncs.
+ */
+static void geo_process_mcomp_extra(struct GraphNodeAnimatedPart *node) {
+    // To-do: This
+    /*if (is_anim_playing && current_animation.custom && current_canim_has_extra) {
+        geo_process_animated_part(node);
+    } else {*/
+        if (node->displayList != NULL) {
+            geo_append_display_list(node->displayList, node->node.flags >> 8);
+        }
+        if (node->node.children != NULL) {
+            geo_process_node_and_siblings(node->node.children);
+        }
+    //}
 }
 
 /**
@@ -1202,12 +1236,16 @@ static s32 obj_is_in_view(struct GraphNodeObject *node, Mat4 matrix) {
  * Process an object node.
  */
 static void geo_process_object(struct Object *node) {
+    if (auto_chroma && node != gMarioState->marioObj) return;
+
     struct Object* lastProcessingObject = gCurGraphNodeProcessingObject;
     struct MarioState* lastMarioState = gCurGraphNodeMarioState;
     gCurGraphNodeProcessingObject = node;
     Mat4 mtxf;
     s32 hasAnimation = (node->header.gfx.node.flags & GRAPH_RENDER_HAS_ANIMATION) != 0;
     Vec3f scalePrev;
+
+    gCurrentObject = node;
 
     // Sanity check our stack index, If we above or equal to our stack size. Return to prevent OOB\.
     if ((gMatStackIndex + 1) >= MATRIX_STACK_SIZE) { LOG_ERROR("Preventing attempt to exceed the maximum size %i for our matrix stack with size of %i.", MATRIX_STACK_SIZE - 1, gMatStackIndex); return; }
@@ -1568,6 +1606,9 @@ void geo_process_node_and_siblings(struct GraphNode *firstNode) {
                         break;
                     case GRAPH_NODE_TYPE_ANIMATED_PART:
                         geo_process_animated_part((struct GraphNodeAnimatedPart *) curGraphNode);
+                        break;
+                    case GRAPH_NODE_TYPE_MCOMP_EXTRA:
+                        geo_process_mcomp_extra((struct GraphNodeAnimatedPart *) curGraphNode);
                         break;
                     case GRAPH_NODE_TYPE_BILLBOARD:
                         geo_process_billboard((struct GraphNodeBillboard *) curGraphNode);

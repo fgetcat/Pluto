@@ -26,6 +26,7 @@
 #include "sound_init.h"
 #include "pc/network/network.h"
 #include "pc/lua/smlua_hooks.h"
+#include "saturn/saturn.h"
 
 #define TOAD_STAR_1_REQUIREMENT gBehaviorValues.ToadStar1Requirement
 #define TOAD_STAR_2_REQUIREMENT gBehaviorValues.ToadStar2Requirement
@@ -369,6 +370,7 @@ Gfx* geo_mirror_mario_set_alpha(s32 callContext, struct GraphNode* node, UNUSED 
 
     if (callContext == GEO_CONTEXT_RENDER) {
         alpha = (bodyState->modelState & 0x100) ? (bodyState->modelState & 0xFF) : 255;
+        if (switch_state_powerup == 2 || switch_state_powerup == 4) alpha = vanish_transparency;
         gfx = make_gfx_mario_alpha(asGenerated, alpha);
     }
     return gfx;
@@ -411,6 +413,9 @@ Gfx* geo_switch_mario_eyes(s32 callContext, struct GraphNode* node, UNUSED Mat4*
         else {
             switchCase->selectedCase = bodyState->eyeState - 1;
         }
+
+        if (switch_state_eyes != 0) switchCase->selectedCase = switch_state_eyes - 1;
+        if (custom_eyes) switchCase->selectedCase = 3;
     }
     return NULL;
 }
@@ -516,6 +521,11 @@ Gfx* geo_switch_mario_hand(s32 callContext, struct GraphNode* node, UNUSED Mat4*
                     (bodyState->handState < 2) ? bodyState->handState : MARIO_HAND_FISTS;
             }
         }
+
+        switch(switchCase->numCases) {
+            case 0: if (switch_state_hand_right != 0) switchCase->selectedCase = switch_state_hand_right - 1; break;
+            default: if (switch_state_hand_left != 0) switchCase->selectedCase = switch_state_hand_left - 1;
+        }
     }
     return NULL;
 }
@@ -565,6 +575,7 @@ Gfx* geo_switch_mario_cap_effect(s32 callContext, struct GraphNode* node, UNUSED
 
     if (callContext == GEO_CONTEXT_RENDER) {
         switchCase->selectedCase = bodyState->modelState >> 8;
+        if (switch_state_powerup != 0) switchCase->selectedCase = switch_state_powerup - 1;
     }
     return NULL;
 }
@@ -584,7 +595,7 @@ Gfx* geo_switch_mario_cap_on_off(s32 callContext, struct GraphNode* node, UNUSED
         switchCase->selectedCase = bodyState->capState & 1;
         while (next && (next != node)) {
             if (next->type == GRAPH_NODE_TYPE_TRANSLATION_ROTATION) {
-                if (bodyState->capState & 2) {
+                if (bodyState->capState & 2 || switch_state_cap == 2) {
                     next->flags |= GRAPH_RENDER_ACTIVE;
                 }
                 else {
@@ -593,6 +604,8 @@ Gfx* geo_switch_mario_cap_on_off(s32 callContext, struct GraphNode* node, UNUSED
             }
             next = next->next;
         }
+
+        if (switch_state_cap != 0) switchCase->selectedCase = switch_state_cap;
     }
     return NULL;
 }
@@ -762,6 +775,24 @@ static struct PlayerColor geo_mario_get_player_color(const struct PlayerPalette 
     struct PlayerColor color = { 0 };
     u8 index = geo_get_processing_object_index();
     struct MarioBodyState* bodyState = &gBodyStates[index];
+
+    if (index == 0) {
+        for (s32 part = 0; part != PLAYER_PART_MAX; ++part) {
+            color.parts[part] = (Lights1) gdSPDefLights1(
+                // Shadow
+                DEFAULT_MARIO_PALETTE.parts[part][0] * bodyState->shadeR / 255.0f,
+                DEFAULT_MARIO_PALETTE.parts[part][1] * bodyState->shadeG / 255.0f,
+                DEFAULT_MARIO_PALETTE.parts[part][2] * bodyState->shadeB / 255.0f,
+                // Light
+                DEFAULT_MARIO_PALETTE.parts[part][0] * bodyState->lightR / 255.0f,
+                DEFAULT_MARIO_PALETTE.parts[part][1] * bodyState->lightG / 255.0f,
+                DEFAULT_MARIO_PALETTE.parts[part][2] * bodyState->lightB / 255.0f,
+                0x28 + bodyState->lightingDirX * 127.0f, 0x28 + bodyState->lightingDirY * 127.0f, 0x28 + bodyState->lightingDirZ * 127.0f
+            );
+        }
+        return color;
+    }
+
     for (s32 part = 0; part != PLAYER_PART_MAX; ++part) {
         color.parts[part] = (Lights1) gdSPDefLights1(
             // Shadow

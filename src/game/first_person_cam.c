@@ -18,6 +18,8 @@
 #include "pc/lua/utils/smlua_misc_utils.h"
 #include "pc/lua/smlua_hooks.h"
 
+#include "saturn/saturn_imgui.h"
+
 #define CLAMP(_val, _min, _max) MAX(MIN((_val), _max), _min)
 
 struct FirstPersonCamera gFirstPersonCamera = {
@@ -66,7 +68,7 @@ void first_person_camera_update(void) {
     s16 invX = camera_config_is_x_inverted() ? 1 : -1;
     s16 invY = camera_config_is_y_inverted() ? 1 : -1;
 
-    if (gMenuMode == -1 && !gDjuiChatBoxFocus && !gDjuiConsoleFocus) {
+    if (gMenuMode == -1 && !gDjuiChatBoxFocus && !gDjuiConsoleFocus && !show_menu) {
         // update pitch
         gFirstPersonCamera.pitch -= sensY * (invY * m->controller->extStickY - 1.5f * mouse_y);
         gFirstPersonCamera.pitch = CLAMP(gFirstPersonCamera.pitch, -0x3F00, 0x3F00);
@@ -168,7 +170,8 @@ void first_person_update(void) {
             level_trigger_warp(m, WARP_OP_LOOK_UP);
         }
 
-        m->marioBodyState->modelState = 0x100;
+        //m->marioBodyState->modelState = 0x100;
+        m->marioObj->header.gfx.node.flags |= GRAPH_RENDER_INVISIBLE;
         if (m->heldObj) {
             Vec3f camDir = {
                 m->area->camera->focus[0] - m->area->camera->pos[0],

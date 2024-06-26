@@ -16,6 +16,7 @@
 #include "pc/configfile.h"
 #include "pc/network/network.h"
 #include "pc/lua/smlua.h"
+#include "saturn/saturn.h"
 
 struct LandingAction {
     s16 numFrames;
@@ -617,7 +618,12 @@ void anim_and_audio_for_walk(struct MarioState *m) {
                         val14 = (s32)(val04 / 4.0f * 0x10000);
                         set_character_anim_with_accel(m, CHAR_ANIM_RUNNING, val14);
                         play_step_sound(m, 9, 45);
-                        targetPitch = tilt_body_running(m);
+                        if (!enable_torso_rotation) {
+                            m->marioBodyState->torsoAngle[0] = 0;
+                            m->marioBodyState->torsoAngle[2] = 0;
+                        } else {
+                            targetPitch = tilt_body_running(m);
+                        }
 
                         val0C = FALSE;
                     }

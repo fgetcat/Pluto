@@ -73,6 +73,7 @@ void game_deinit(void);
 void game_exit(void);
 
 #ifdef __cplusplus
+extern void send_palette_to_network();
 }
 #endif
 

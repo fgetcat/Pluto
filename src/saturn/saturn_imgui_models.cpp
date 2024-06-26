@@ -1,0 +1,329 @@
+#include "saturn_imgui_models.h"
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <vector>
+
+#include "saturn/saturn.h"
+#include "saturn/saturn_colors.h"
+#include "saturn/saturn_models.h"
+#include "saturn/saturn_textures.h"
+#include "saturn/saturn_imgui.h"
+#include "saturn/saturn_imgui_colors.h"
+#include "saturn/saturn_imgui_file_browser.h"
+#include "saturn/libs/imgui/imgui.h"
+#include "saturn/libs/imgui/imgui_internal.h"
+#include "saturn/libs/imgui/imgui_impl_sdl.h"
+#include "saturn/libs/imgui/imgui_impl_opengl3.h"
+#include "saturn/libs/imgui/imgui_impl_opengl3_loader.h"
+#include "pc/djui/djui.h"
+#include "pc/djui/djui_chat_box.h"
+#include "pc/djui/djui_console.h"
+#include "pc/network/network_player.h"
+#include "pc/network/packets/packet.h"
+#include "pc/gfx/gfx_pc.h"
+#include "pc/pc_main.h"
+
+#include <SDL2/SDL.h>
+
+#include "data/dynos.cpp.h"
+
+const char* eye_switches[] = {"Default (Blink)", "Open", "Half", "Closed", "Left", "Right", "Up", "Down", "Dead"};
+const char* right_hand_switches[] = {"Default", "Fist", "Open", "Peace", "With Cap", "With Wing Cap"};
+const char* left_hand_switches[] = {"Default", "Fist", "Open"};
+const char* cap_switches[] = {"Default (On)", "Off", "Wing Cap"}; // unused "wing cap off" not included
+const char* powerup_switches[] = {"Default", "None", "Vanish", "Metal", "Vanish & Metal"};
+
+bool ignore_expression_visibility;
+
+bool warning_dismissed;
+
+void TexturePopupMenu(int id) {
+    std::string label_name = "###menu_texture_popout_" + std::to_string(id);
+    
+    if (ImGui::IsItemHovered() && ImGui::IsMouseReleased(ImGuiMouseButton_Right))
+        ImGui::OpenPopup(label_name.c_str());
+    if (ImGui::BeginPopup(label_name.c_str())) {
+        ImGui::TextDisabled("#%i", id); ImGui::SameLine();
+        ImGui::Text(current_expressions[id].Textures[current_expressions[id].CurrentIndex].FileName.c_str()); ImGui::SameLine();
+        ImGui::TextDisabled(current_expressions[id].Format.c_str());
+        ImGui::EndPopup();
+    }
+}
+
+void OpenEyeSelector() {
+    if (current_expressions.size() <= 0) return;
+    if (current_expressions[0].Name == "eyes") {
+        ImGui::BeginDisabled(!custom_eyes || (!current_expressions[0].Visible && !ignore_expression_visibility));
+        saturn_file_browser_filter_extension("png");
+        saturn_file_browser_scan_directory(current_expressions[0].FolderPath);
+        saturn_file_browser_height(150);
+        if (saturn_file_browser_show("eyes")) {
+            for (int i = 0; i < current_expressions[0].Textures.size(); i++) {
+                std::filesystem::path path = current_expressions[0].Textures[i].FilePath;
+                std::filesystem::path base = current_expressions[0].FolderPath;
+                if (std::filesystem::relative(path, base) == saturn_file_browser_get_selected()) {
+                    current_expressions[0].CurrentIndex = i;
+                    break;
+                }
+            }
+        }
+        ImGui::EndDisabled();
+        TexturePopupMenu(0);
+    }
+}
+
+void OpenModelExpressionSelector(PackData* pack) {
+    if (!pack->mEnabled || !IsSaturnModel(pack->mIndex) || current_expressions.size() <= 0) return;
+    if (model_color_code_list.size() > 0) ImGui::Separator();
+
+    if (current_expressions[0].Name == "eyes") ImGui::Checkbox("Custom Eyes", &custom_eyes);
+    OpenEyeSelector();
+
+    if (current_expressions.size() > 1) {
+        // A scrollbar is visible if the expressions list is too long
+        if (current_expressions.size() > 8)
+            ImGui::BeginChild(("###menu_exp_model"), ImVec2(200, 190), ImGuiChildFlags_ResizeY, ImGuiWindowFlags_NoBackground);
+        
+        ImGui::BeginTable("###menu_exp_table", 2, ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_RowBg, ImVec2(200, 0));
+        ImGui::TableSetupColumn("Expression", ImGuiTableColumnFlags_WidthFixed);
+        ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch);
+        //ImGui::TableHeadersRow();
+        for (int i = 0; i < current_expressions.size(); i++) {
+            ImGui::TableNextRow();
+            Expression expression = current_expressions[i];
+            if (expression.Name == "eyes") continue;
+            if (expression.Textures.size() <= 1) continue;
+            ImGui::BeginDisabled(!expression.Visible && !ignore_expression_visibility);
+
+            ImGui::TableSetColumnIndex(0);
+            std::string label_name = "###menu_exp_label_" + expression.Name;
+            ImGui::Text(expression.Name.c_str());
+            
+            ImGui::TableSetColumnIndex(1);
+            if (expression.Textures.size() >= 2) {
+                if (expression.IsToggleFormat() &&
+                    // Use checkbox
+                    (expression.Textures[0].FileName.find("default") != std::string::npos ||
+                    expression.Textures[1].FileName.find("default") != std::string::npos)) {
+
+                        // Check which index "default.png" is (0 or 1) to determine default value
+                        int select_index = (expression.Textures[0].FileName.find("default") != std::string::npos) ? 0 : 1;
+                        int deselect_index = (select_index == 0) ? 1 : 0;
+                        bool is_selected = (expression.CurrentIndex == select_index);
+
+                        if (ImGui::Checkbox(label_name.c_str(), &is_selected)) {
+                            if (is_selected) current_expressions[i].CurrentIndex = select_index;
+                            else current_expressions[i].CurrentIndex = deselect_index;
+                        }
+                        // Popout showing the checkbox's actively displayed value
+                        // This is technically the opposite of the dropdowns and selectables, which shows the value-that-will-be, not current
+                        TexturePopupMenu(i);
+                } else {
+                    // Use dropdown
+                    std::string defaultLabel = expression.Textures[expression.CurrentIndex].ShortFileName();
+                    ImGui::PushItemWidth(ImGui::GetColumnWidth(1)); // 133
+                    if (ImGui::BeginCombo(label_name.c_str(), defaultLabel.c_str(), ImGuiComboFlags_None)) {
+                        saturn_file_browser_filter_extension("png");
+                        saturn_file_browser_scan_directory(current_expressions[i].FolderPath);
+                        if (saturn_file_browser_show_tree("expr_" + std::to_string(i))) {
+                            for (int j = 0; j < current_expressions[i].Textures.size(); j++) {
+                                std::filesystem::path path = current_expressions[i].Textures[j].FilePath;
+                                std::filesystem::path base = current_expressions[i].FolderPath;
+                                if (std::filesystem::relative(path, base) == saturn_file_browser_get_selected()) {
+                                    current_expressions[i].CurrentIndex = j;
+                                    break;
+                                }
+                            }
+                        }
+                        ImGui::EndCombo();
+                    }
+                    ImGui::PopItemWidth();
+                    TexturePopupMenu(i);
+                }
+            }
+            ImGui::EndDisabled();
+        }
+        ImGui::EndTable();
+        if (current_expressions.size() > 8) ImGui::EndChild();
+    }
+    if (!IsAllRGBA32(current_expressions) && !warning_dismissed) {
+        ImGui::BeginChild("###menu_model_warning", ImVec2(200, 85), ImGuiChildFlags_Border, ImGuiWindowFlags_None);
+        ImGui::BeginDisabled();
+        ImGui::TextWrapped("Some materials are not set to texture format RGBA-32 - this may cause graphical errors!");
+        ImGui::EndDisabled();
+        if (ImGui::MenuItem("Dismiss###dismiss_model_warning")) {
+            warning_dismissed = true;
+        }
+        ImGui::EndChild();
+    }
+}
+
+void OpenModelCCSelector(PackData* pack, std::vector<std::string> cc_list) {
+    if (!IsSaturnModel(pack->mIndex)) return;
+
+    ImGui::BeginChild("###menu_model_cc_selector", ImVec2(200, 100), ImGuiChildFlags_Border);
+    for (int n = 0; n < cc_list.size(); n++) {
+        const bool is_selected = (uiCcListId == ((n + 1) * -1) && pack->mIndex == active_saturn_model_index);
+        std::string label_name = cc_list[n].substr(0, cc_list[n].find_last_of('.')) + "###mcc_list_" + std::to_string(n);
+        if (ImGui::Selectable(label_name.c_str(), is_selected)) {
+            if (pack->mIndex == active_saturn_model_index) uiCcListId = (n + 1) * -1;
+            else uiCcListId = 0;
+
+            // Overwrite current color code
+            current_color_code = LoadGSFile(cc_list[n], pack->mPath + "/colorcodes");
+            PasteGameShark(current_color_code.GameShark, false);
+            UpdateEditorFromPalette();
+        }
+        if (ImGui::BeginPopupContextItem()) {
+            if (label_name != "../default") {
+                ImGui::TextDisabled("#%i", n); ImGui::SameLine();
+                ImGui::Text(cc_list[n].c_str());
+                ImGui::TextDisabled(((std::string)pack->mDisplayName.begin() + "/colorcodes/" + cc_list[n]).c_str());
+            }
+            if (ImGui::Button("Copy GS to Clipboard")) {
+                ImGui::LogToClipboard();
+                ColorCode paste = LoadGSFile(cc_list[n], pack->mPath + "/colorcodes");
+                ImGui::LogText(paste.GameShark.c_str());
+                ImGui::LogFinish();
+            }
+            ImGui::Separator();
+            ImGui::TextDisabled("%i color code(s)", cc_list.size());
+            if (ImGui::Button("Refresh")) {
+                current_expressions.clear();
+                UpdateEditorLabels();
+                LoadModelData(active_saturn_model_index, pack->mEnabled);
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::EndPopup();
+        }
+        if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None)) {
+            ColorCode dragging = LoadGSFile(cc_list[n], pack->mPath + "/colorcodes");
+            dragging.IsModel = true;
+            ImGui::SetDragDropPayload("COLORCODE", &dragging, sizeof(ColorCode));
+            ImGui::Text("%s (%s)", pack->mDisplayName, dragging.Name.c_str());
+            ImGui::EndDragDropSource();
+        }
+    }
+    ImGui::EndChild();
+    if (ImGui::BeginDragDropTarget()) {
+        if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("SAVE_COLORCODE")) {
+            ColorCode dragged = *(const ColorCode*)payload->Data;
+            SaveActiveColorCode(pack->mPath + "/colorcodes");
+
+            current_expressions.clear();
+            UpdateEditorLabels();
+            LoadModelData(active_saturn_model_index, pack->mEnabled);
+        }
+        ImGui::EndDragDropTarget();
+    }
+}
+
+void OpenSwitchOptions() {
+    ImGui::PushItemWidth(150);
+    if (ImGui::MenuItem("Reset")) {
+        switch_state_eyes = 0;
+        switch_state_hand_right = 0;
+        switch_state_hand_left = 0;
+        switch_state_cap = 0;
+        switch_state_powerup = 0;
+        vanish_transparency = 128;
+    }
+    ImGui::BeginDisabled(custom_eyes);
+    ImGui::Combo("Eyes###eye_state", &switch_state_eyes, eye_switches, IM_ARRAYSIZE(eye_switches));
+    ImGui::EndDisabled();
+
+    ImGui::Combo("Right Hand###right_hand_state", &switch_state_hand_right, right_hand_switches, IM_ARRAYSIZE(right_hand_switches));
+    ImGui::Combo("Left Hand###left_hand_state", &switch_state_hand_left, left_hand_switches, IM_ARRAYSIZE(left_hand_switches));
+    ImGui::Combo("Cap###cap_state", &switch_state_cap, cap_switches, IM_ARRAYSIZE(cap_switches));
+
+    ImGui::Separator();
+    if (ImGui::Combo("Powerup###powerup_state", &switch_state_powerup, powerup_switches, IM_ARRAYSIZE(powerup_switches)))
+        vanish_transparency = 128;
+    ImGui::BeginDisabled(switch_state_powerup <= 1 || switch_state_powerup == 3);
+    ImGui::SliderInt("###transparency", &vanish_transparency, 0, 255, "Alpha %d", ImGuiSliderFlags_AlwaysClamp);
+    ImGui::EndDisabled();
+    ImGui::PopItemWidth();
+}
+
+void OpenModelSettings() {
+    if (show_window_model_settings && AnyModelsEnabled() && active_saturn_model_index != -1) {
+        PackData* pack = DynOS_Pack_GetFromIndex(active_saturn_model_index);
+        std::string popup_label = pack->mDisplayName.begin();
+        popup_label += " Settings###model_settings";
+        ImGui::Begin(popup_label.c_str(), &show_window_model_settings, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_MenuBar);
+        
+        // Switch Options
+        if (ImGui::BeginMenuBar()) {
+            if (ImGui::BeginMenu("Model")) {
+                if (ImGui::MenuItem("Refresh")) {
+                    current_expressions.clear();
+                    UpdateEditorLabels();
+                    LoadModelData(active_saturn_model_index, pack->mEnabled);
+                }
+                ImGui::Checkbox("Show All Expressions", &ignore_expression_visibility);
+                ImGui::EndMenu();
+            }
+            if (ImGui::BeginMenu("Switches")) {
+                OpenSwitchOptions();
+                ImGui::EndMenu();
+            }
+            ImGui::EndMenuBar();
+        }
+
+        // Model Color Codes
+        if (model_color_code_list.size() > 0)
+            OpenModelCCSelector(pack, model_color_code_list);
+
+        // Expressions
+        OpenModelExpressionSelector(pack);
+        ImGui::End();
+    }
+}
+
+std::vector<std::string> popup_color_code_list;
+
+void OpenModelSelector() {
+    if (ImGui::BeginListBox("###model_packs_list", ImVec2(200, 200))) {
+        for (int i = 0; i < DynOS_Pack_GetCount(); i++) {
+            PackData* pack = DynOS_Pack_GetFromIndex(i);
+            std::string pack_label = pack->mDisplayName.begin();
+            std::string pack_id = pack_label + "###model_pack_" + std::to_string(i);
+
+            ImGui::BeginDisabled(IsSaturnModel(i) && active_saturn_model_index != -1 && active_saturn_model_index != i);
+            if (ImGui::Selectable(pack_id.c_str(), &pack->mEnabled)) {
+                // Toggle model
+                if (IsSaturnModel(i)) {
+                    current_expressions.clear();
+                    UpdateEditorLabels();
+                    warning_dismissed = false;
+                }
+                LoadModelData(i, pack->mEnabled);
+                if (active_saturn_model_index == -1) custom_eyes = false;
+
+                //for (int n = 0; n < pack->mGfxData.Count(); n++) {
+                    ImGui::LogToClipboard();
+                    ImGui::LogText(pack->mGfxData[0].first);
+                    ImGui::LogFinish();
+                //}
+            }
+            ImGui::EndDisabled();
+            
+            std::string popup_id = "###model_pack_popup_" + std::to_string(i);
+            if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled) && ImGui::IsMouseReleased(ImGuiMouseButton_Right)) {
+                ImGui::OpenPopup(popup_id.c_str());
+                popup_color_code_list.clear();
+                popup_color_code_list = GetColorCodeList(pack->mPath + "/colorcodes");
+            }
+            if (ImGui::BeginPopup(popup_id.c_str())) {
+                ImGui::Text(pack->mDisplayName.begin());
+                if (popup_color_code_list.size() > 0)
+                    OpenModelCCSelector(pack, popup_color_code_list);
+                
+                OpenModelExpressionSelector(pack);
+                ImGui::EndPopup();
+            }
+        }
+        ImGui::EndListBox();
+    }
+}

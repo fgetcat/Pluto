@@ -148,6 +148,8 @@ void haunted_chair_act_1(void) {
 }
 
 void bhv_haunted_chair_loop(void) {
+    return;
+    
     if (!(o->activeFlags & ACTIVE_FLAG_IN_DIFFERENT_ROOM)) {
         switch (o->oAction) {
             case 0:

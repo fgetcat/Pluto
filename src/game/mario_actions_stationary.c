@@ -22,6 +22,8 @@
 #include "pc/lua/smlua.h"
 #include "hardcoded.h"
 
+#include "saturn/saturn.h"
+
 s32 check_common_idle_cancels(struct MarioState *m) {
     if (!m) { return 0; }
     mario_drop_held_object(m);
@@ -132,7 +134,7 @@ s32 act_idle(struct MarioState *m) {
         if (m->area && ((m->area->terrainType & TERRAIN_MASK) == TERRAIN_SNOW)) {
             return set_mario_action(m, ACT_SHIVERING, 0);
         } else {
-            if (!gDjuiInMainMenu) {
+            if (!gDjuiInMainMenu && !freeze_camera) {
                 return set_mario_action(m, ACT_START_SLEEPING, 0);
             } else {
                 m->actionState = 0;
@@ -144,37 +146,41 @@ s32 act_idle(struct MarioState *m) {
     if (m->actionArg & 1) {
         set_character_animation(m, CHAR_ANIM_STAND_AGAINST_WALL);
     } else {
-        switch (m->actionState) {
-            case 0:
-                set_character_animation(m, CHAR_ANIM_IDLE_HEAD_LEFT);
-                break;
+        if (freeze_camera && !enable_head_rotation) {
+            saturn_action_idle(m);
+        } else {
+            switch (m->actionState) {
+                case 0:
+                    set_character_animation(m, CHAR_ANIM_IDLE_HEAD_LEFT);
+                    break;
 
-            case 1:
-                set_character_animation(m, CHAR_ANIM_IDLE_HEAD_RIGHT);
-                break;
+                case 1:
+                    set_character_animation(m, CHAR_ANIM_IDLE_HEAD_RIGHT);
+                    break;
 
-            case 2:
-                set_character_animation(m, CHAR_ANIM_IDLE_HEAD_CENTER);
-                break;
-        }
+                case 2:
+                    set_character_animation(m, CHAR_ANIM_IDLE_HEAD_CENTER);
+                    break;
+            }
 
-        if (is_anim_at_end(m)) {
-            // Fall asleep after 10 head turning cycles.
-            // act_start_sleeping is triggered earlier in the function
-            // when actionState == 3. This happens when Mario's done
-            // turning his head back and forth. However, we do some checks
-            // here to make sure that Mario would be able to sleep here,
-            // and that he's gone through 10 cycles before sleeping.
-            // actionTimer is used to track how many cycles have passed.
-            if (++m->actionState == 3) {
-                f32 deltaYOfFloorBehindMario = m->pos[1] - find_floor_height_relative_polar(m, -0x8000, 60.0f);
-                if (deltaYOfFloorBehindMario < -24.0f || 24.0f < deltaYOfFloorBehindMario || (m->floor && (m->floor->flags & SURFACE_FLAG_DYNAMIC))) {
-                    m->actionState = 0;
-                } else {
-                    // If Mario hasn't turned his head 10 times yet, stay idle instead of going to sleep.
-                    m->actionTimer++;
-                    if (m->actionTimer < 10) {
+            if (is_anim_at_end(m)) {
+                // Fall asleep after 10 head turning cycles.
+                // act_start_sleeping is triggered earlier in the function
+                // when actionState == 3. This happens when Mario's done
+                // turning his head back and forth. However, we do some checks
+                // here to make sure that Mario would be able to sleep here,
+                // and that he's gone through 10 cycles before sleeping.
+                // actionTimer is used to track how many cycles have passed.
+                if (++m->actionState == 3) {
+                    f32 deltaYOfFloorBehindMario = m->pos[1] - find_floor_height_relative_polar(m, -0x8000, 60.0f);
+                    if (deltaYOfFloorBehindMario < -24.0f || 24.0f < deltaYOfFloorBehindMario || (m->floor && (m->floor->flags & SURFACE_FLAG_DYNAMIC))) {
                         m->actionState = 0;
+                    } else {
+                        // If Mario hasn't turned his head 10 times yet, stay idle instead of going to sleep.
+                        m->actionTimer++;
+                        if (m->actionTimer < 10) {
+                            m->actionState = 0;
+                        }
                     }
                 }
             }
@@ -1136,7 +1142,10 @@ s32 act_first_person(struct MarioState *m) {
     }
 
     stationary_ground_step(m);
-    set_character_animation(m, CHAR_ANIM_FIRST_PERSON);
+
+    if (freeze_camera && m->playerIndex == 0) {
+        saturn_action_idle(m);
+    } else set_character_animation(m, CHAR_ANIM_FIRST_PERSON);
     return FALSE;
 }
 

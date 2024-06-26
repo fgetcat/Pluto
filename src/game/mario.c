@@ -44,6 +44,7 @@
 #include "pc/network/socket/socket.h"
 #include "bettercamera.h"
 #include "first_person_cam.h"
+#include "saturn/saturn.h"
 
 #define MAX_HANG_PREVENTION 64
 
@@ -471,7 +472,7 @@ void play_mario_heavy_landing_sound_once(struct MarioState *m, u32 soundBits) {
  * Plays action and Mario sounds relevant to what was passed into the function.
  */
 void play_mario_sound(struct MarioState *m, s32 actionSound, s32 marioSound) {
-    if (!m) { return; }
+    if (!m || freeze_camera) { return; }
     if (actionSound == SOUND_ACTION_TERRAIN_JUMP) {
         play_mario_action_sound(m, (m->flags & MARIO_METAL_CAP) ? (s32) SOUND_ACTION_METAL_JUMP
                                                                 : (s32) SOUND_ACTION_TERRAIN_JUMP, 1);
