@@ -23,6 +23,7 @@
 #include "pc/debuglog.h"
 #include "pc/gfx/gfx_rendering_api.h"
 #include "pc/gfx/gfx_pc.h"
+#include "src/game/rendering_graph_node.h"
 
 std::vector<Expression> current_expressions;
 
@@ -171,8 +172,34 @@ const void* saturn_bind_texture(const void* input, Object* currentObj) {
             if (expression.PathHasReplaceKey(texName, "saturn_")) {
                 current_expressions[i].Visible = true;
 
+                // Set texture format
                 if (texName.find_last_of("_") != std::string::npos)
                     current_expressions[i].Format = texName.substr(texName.find_last_of("_") + 1);
+
+                // Custom blink cycle
+                if (expression.Name == "eyes" && current_expressions.size() >= 3 &&
+                        expression.BlinkIndex[0] != -1 &&
+                        expression.BlinkIndex[1] != -1) {
+                    // Create an 8 frame animation cycle (synced with gMarioBlinkAnimation)
+                    s16 blink_frame = ((7 * 32 + gAreaUpdateCounter) >> 1) & 0x1F;
+                    switch (blink_frame) {
+                        default:
+                        case 3:
+                            // Eyes Open
+                            return expression.Textures[expression.CurrentIndex].RawData;
+                        case 0:
+                        case 2:
+                        case 4:
+                        case 6:
+                            // Eyes Half
+                            return expression.Textures[expression.BlinkIndex[0]].RawData;
+                        case 1:
+                        case 5:
+                            // Eyes Closed
+                            return expression.Textures[expression.BlinkIndex[1]].RawData;
+                    }
+                }
+
                 return expression.Textures[expression.CurrentIndex].RawData;
             }
         }

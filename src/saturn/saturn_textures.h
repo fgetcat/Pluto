@@ -33,17 +33,21 @@ class Expression {
 public:
     std::string Name;
     std::string FolderPath;
-    bool Enabled;
-    std::vector<TexturePath> Textures;
-    std::vector<TexturePath> Folders;
-    /* The index of the current selected texture */
-    int CurrentIndex = 0;
-
     /* Returns true if the replace key was detected in the texture pool
        (Note: This ignores whether or not an expression folder is present) */
     bool Visible;
-
+    /* The material's texture format, as read in the replace key's filepath
+       (Note: This may be misleading if the geo.inc.c was manually edited) */
     std::string Format;
+    
+    std::vector<TexturePath> Textures;
+    std::vector<TexturePath> Folders;
+
+    /* The index of the current selected texture */
+    int CurrentIndex = 0;
+
+    /* Used in popouts */
+    int RightClickIndex = 0;
 
     /* Returns true if a given path contains a prefix (saturn_) followed by the expression's replacement keywords
        For example, "/eye" can be "saturn_eye" or "saturn_eyes" */
@@ -68,6 +72,9 @@ public:
         }
         return false;
     }
+
+    /* An array of indexes making up a custom blink cycle; Only used by eyes */
+    int BlinkIndex[2] = {-1, -1};
 };
 
 extern u8* GetTextureData(TexturePath, int*, int*);
