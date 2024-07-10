@@ -176,8 +176,9 @@ extern ColorCode current_color_code;
 extern "C" {
 #endif    
 extern bool auto_chroma;
-extern u16 gChromaKeyColor;
 extern struct ColorTemplate chromaColor;
+extern bool chroma_show_objects;
+extern bool chroma_show_geo;
 #ifdef __cplusplus
 }
 #endif

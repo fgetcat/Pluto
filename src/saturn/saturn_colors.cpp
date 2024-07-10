@@ -39,8 +39,9 @@ std::vector<std::string> color_code_list;
 std::vector<std::string> model_color_code_list;
 
 bool auto_chroma;
-u16 gChromaKeyColor = 0x07C1;
 ColorTemplate chromaColor           {0,   0,   255, 127, 0,   0  };
+bool chroma_show_objects;
+bool chroma_show_geo;
 
 /* Converts a color template into a hex string */
 std::string HexifyColorTemplate(ColorTemplate &colorBodyPart) {

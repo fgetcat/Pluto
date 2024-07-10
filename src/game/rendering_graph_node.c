@@ -799,7 +799,7 @@ static Gfx* create_object_dl(Gfx* dl) {
  * parent node. It processes its children if it has them.
  */
 static void geo_process_display_list(struct GraphNodeDisplayList *node) {
-    if (auto_chroma && gCurGraphNodeObject != &gMarioState->marioObj->header.gfx) return;
+    if (auto_chroma && !chroma_show_geo && gCurGraphNodeObject != &gMarioState->marioObj->header.gfx) return;
 
     if (node->displayList != NULL) {
         geo_append_display_list(create_object_dl(node->displayList), node->node.flags >> 8);
@@ -814,7 +814,7 @@ static void geo_process_display_list(struct GraphNodeDisplayList *node) {
  * the list is generated on the fly by a function.
  */
 static void geo_process_generated_list(struct GraphNodeGenerated *node) {
-    if (auto_chroma && gCurGraphNodeObject != &gMarioState->marioObj->header.gfx) return;
+    if (auto_chroma && !chroma_show_geo && gCurGraphNodeObject != &gMarioState->marioObj->header.gfx) return;
 
     if (node->fnNode.func != NULL) {
         Gfx *list = node->fnNode.func(GEO_CONTEXT_RENDER, &node->fnNode.node,
@@ -864,6 +864,8 @@ static void geo_process_background(struct GraphNodeBackground *node) {
 #endif
         Gfx *gfx = gfxStart;
         if (gfx == NULL) { return; }
+
+        if (auto_chroma) gCurrentObject->oOpacity = 255;
 
         gDPPipeSync(gfx++);
         gDPSetCycleType(gfx++, G_CYC_FILL);
@@ -1236,7 +1238,7 @@ static s32 obj_is_in_view(struct GraphNodeObject *node, Mat4 matrix) {
  * Process an object node.
  */
 static void geo_process_object(struct Object *node) {
-    if (auto_chroma && node != gMarioState->marioObj) return;
+    if (auto_chroma && !chroma_show_objects && node != gMarioState->marioObj) return;
 
     struct Object* lastProcessingObject = gCurGraphNodeProcessingObject;
     struct MarioState* lastMarioState = gCurGraphNodeMarioState;

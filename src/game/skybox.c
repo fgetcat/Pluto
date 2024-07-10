@@ -477,9 +477,12 @@ Gfx *create_skybox_facing_camera(s8 player, s8 background, f32 fov,
     s8 colorIndex = 1;
 
     if (auto_chroma) {
-        sSkyboxColors[colorIndex][0] = chromaColor.red[0];
-        sSkyboxColors[colorIndex][1] = chromaColor.green[0];
-        sSkyboxColors[colorIndex][2] = chromaColor.blue[0];
+        sSkyboxColors[0][0] = chromaColor.red[0];
+        sSkyboxColors[0][1] = chromaColor.green[0];
+        sSkyboxColors[0][2] = chromaColor.blue[0];
+        sSkyboxColors[1][0] = chromaColor.red[0];
+        sSkyboxColors[1][1] = chromaColor.green[0];
+        sSkyboxColors[1][2] = chromaColor.blue[0];
     } else {
         sSkyboxColors[colorIndex][0] = 255;
         sSkyboxColors[colorIndex][1] = 255;
