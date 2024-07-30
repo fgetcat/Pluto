@@ -131,7 +131,7 @@ void OpenModelExpressionSelector(PackData* pack) {
                 } else {
                     // Use dropdown
                     std::string defaultLabel = expression.Textures[expression.CurrentIndex].ShortFileName();
-                    ImGui::PushItemWidth(ImGui::GetColumnWidth(1)); // 133
+                    ImGui::PushItemWidth((current_expressions.size() > 8) ? ImGui::GetColumnWidth(1) - 14 : ImGui::GetColumnWidth(1));
                     if (ImGui::BeginCombo(label_name.c_str(), defaultLabel.c_str(), ImGuiComboFlags_None)) {
                         saturn_file_browser_filter_extension("png");
                         saturn_file_browser_scan_directory(current_expressions[i].FolderPath);
