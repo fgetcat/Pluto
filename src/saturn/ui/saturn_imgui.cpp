@@ -198,7 +198,7 @@ void imgui_update() {
     ImGui::Checkbox("Custom", &enable_custom_anim);
     if (ImGui::Button("Play")) {
         set_character_animation(&gMarioStates[0], CHAR_ANIM_A_POSE);
-        saturn_play_custom_animation();
+        saturn_play_pluto_animation();
     }
     ImGui::End();*/
 

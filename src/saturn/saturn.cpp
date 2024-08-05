@@ -133,7 +133,7 @@ int saturn_camera_update() {
 /* Custom Mario action, active when the player is idle and in machinima mode.
 To-do: Cycle animations via the mixtape */
 void saturn_action_idle(struct MarioState *m) {
-    if (enable_custom_anim && override_anim) saturn_play_custom_animation();
+    if (enable_custom_anim && override_anim) saturn_play_pluto_animation();
     else set_character_animation(m, (override_anim) ? selected_anim_index : CHAR_ANIM_FIRST_PERSON);
     if (m->marioObj == NULL) return;
 
