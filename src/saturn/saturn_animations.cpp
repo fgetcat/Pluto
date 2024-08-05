@@ -242,6 +242,7 @@ std::vector<std::string> pluto_animations_list;
 /* Loads a PlutoAnim struct from a given filepath */
 PlutoAnim LoadPAnim(std::string filePath) {
     PlutoAnim plutoAnim;
+    if (pluto_animations_list.size() <= 0) return plutoAnim;
 
     std::ifstream input(filePath, std::ios::binary);
 
@@ -270,7 +271,6 @@ PlutoAnim LoadPAnim(std::string filePath) {
         for (int v = values_pos; v < bytes.size(); v++) {
             if (bytes[v] == 'i' && bytes[v+1] == 'n' && bytes[v+2] == 'd' && bytes[v+3] == 'i' && bytes[v+4] == 'c' && bytes[v+5] == 'e' && bytes[v+6] == 's') {
                 indices_pos = v + 0x08;
-                //plutoAnim.Length = (uint8_t)bytes[indices_pos];
                 break;
             }
             if (v % 2 != 0 && v > 0) {
@@ -306,7 +306,8 @@ PlutoAnim LoadPAnim(std::string filePath) {
 
 std::vector<std::string> GetPAnimList(std::string folderPath) {
     std::vector<std::string> panim_list;
-    
+
+    std::filesystem::create_directory(folderPath);
     if (std::filesystem::exists(folderPath)) {
         for (const auto & entry : std::filesystem::directory_iterator(folderPath)) {
             std::filesystem::path path = entry.path();

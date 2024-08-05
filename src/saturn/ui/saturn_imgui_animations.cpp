@@ -58,6 +58,7 @@ void OpenAnimationsMenu() {
             }
             ImGui::EndTabItem();
         }
+        if (pluto_animations_list.size() > 0) {
         if (ImGui::BeginTabItem("PAnim")) {
             enable_custom_anim = true;
             if (current_panim.Length == -1) {
@@ -95,6 +96,7 @@ void OpenAnimationsMenu() {
         }
         if (ImGui::IsItemClicked())
             pluto_animations_list = GetPAnimList("dynos/anims");
+        }
 
         if (ImGui::Checkbox("Override Animation", &override_anim))
             if (!override_anim) set_character_animation(&gMarioStates[0], CHAR_ANIM_IDLE_HEAD_LEFT);
