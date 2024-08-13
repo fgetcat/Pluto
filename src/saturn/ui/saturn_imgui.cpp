@@ -182,6 +182,8 @@ void imgui_update() {
 
             ImGui::End();
         }
+
+        BoneEditorWindow();
     }
 
     /*ImGui::Begin("Test");

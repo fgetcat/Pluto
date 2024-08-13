@@ -33,6 +33,37 @@ extern "C" {
 
 static char animSearchTerm[128];
 
+void BoneEditorWindow() {
+    if (current_pluto_anim.Values.size() > 0 && pause_anim && is_editing_panim) {
+        ImGui::Begin("Edit Pluto Anim", &is_editing_panim, ImGuiWindowFlags_None);
+        int currbone = 0;
+#define BONE_ENTRY(name) ImGui::DragFloat3(name, bone_rotations[currbone++]);
+        BONE_ENTRY("Translation"    );
+        BONE_ENTRY("Root"           );
+        BONE_ENTRY("Body"           );
+        BONE_ENTRY("Torso"          );
+        BONE_ENTRY("Head"           );
+        BONE_ENTRY("Left Arm"       );
+        BONE_ENTRY("Upper Left Arm" );
+        BONE_ENTRY("Lower Left Arm" );
+        BONE_ENTRY("Left Hand"      );
+        BONE_ENTRY("Right Arm"      );
+        BONE_ENTRY("Upper Right Arm");
+        BONE_ENTRY("Lower Right Arm");
+        BONE_ENTRY("Right Hand"     );
+        BONE_ENTRY("Left Leg"       );
+        BONE_ENTRY("Upper Left Leg" );
+        BONE_ENTRY("Lower Left Leg" );
+        BONE_ENTRY("Left Foot"      );
+        BONE_ENTRY("Right Leg"      );
+        BONE_ENTRY("Upper Right Leg");
+        BONE_ENTRY("Lower Right Leg");
+        BONE_ENTRY("Right Foot"     );
+#undef BONE_ENTRY
+        ImGui::End();
+    }
+}
+
 void OpenAnimationsMenu() {
     bool show_controls = true;
     if (ImGui::BeginTabBar("###animation_tab_bar")) {
@@ -138,34 +169,6 @@ void OpenAnimationsMenu() {
     if (enable_custom_anim) {
     ImGui::BeginDisabled(current_pluto_anim.Values.size() <= 0 || !pause_anim);
     if (ImGui::Button("Edit Pose")) is_editing_panim = !is_editing_panim;
-    if (current_pluto_anim.Values.size() > 0 && pause_anim && is_editing_panim) {
-        ImGui::Begin("Edit Pluto Anim", &is_editing_panim, ImGuiWindowFlags_None);
-        int currbone = 0;
-#define BONE_ENTRY(name) ImGui::DragFloat3(name, bone_rotations[currbone++]);
-        BONE_ENTRY("Translation"    );
-        BONE_ENTRY("Root"           );
-        BONE_ENTRY("Body"           );
-        BONE_ENTRY("Torso"          );
-        BONE_ENTRY("Head"           );
-        BONE_ENTRY("Left Arm"       );
-        BONE_ENTRY("Upper Left Arm" );
-        BONE_ENTRY("Lower Left Arm" );
-        BONE_ENTRY("Left Hand"      );
-        BONE_ENTRY("Right Arm"      );
-        BONE_ENTRY("Upper Right Arm");
-        BONE_ENTRY("Lower Right Arm");
-        BONE_ENTRY("Right Hand"     );
-        BONE_ENTRY("Left Leg"       );
-        BONE_ENTRY("Upper Left Leg" );
-        BONE_ENTRY("Lower Left Leg" );
-        BONE_ENTRY("Left Foot"      );
-        BONE_ENTRY("Right Leg"      );
-        BONE_ENTRY("Upper Right Leg");
-        BONE_ENTRY("Lower Right Leg");
-        BONE_ENTRY("Right Foot"     );
-#undef BONE_ENTRY
-        ImGui::End();
-    }
     ImGui::EndDisabled();
     }
 }
