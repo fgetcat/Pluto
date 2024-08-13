@@ -117,7 +117,7 @@ s16 set_mario_animation(struct MarioState *m, s32 targetAnimID) {
 /**
  * Sets the character specific animation without any acceleration, running at its default rate.
  */
-s16 set_character_animation(struct MarioState *m, s32 targetAnimID) {
+s16 force_set_character_animation(struct MarioState *m, s32 targetAnimID) {
     if (!m) { return 0; }
     struct Object *o = m->marioObj;
     if (!o || !m->animation) { return 0; }
@@ -148,6 +148,11 @@ s16 set_character_animation(struct MarioState *m, s32 targetAnimID) {
     }
 
     return o->header.gfx.animInfo.animFrame;
+}
+
+s16 set_character_animation(struct MarioState *m, s32 targetAnimID) {
+    if (override_anim) return 0;
+    force_set_character_animation(m, targetAnimID);
 }
 
 /**

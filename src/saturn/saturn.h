@@ -43,6 +43,7 @@ extern "C" {
     extern bool hang_anim;
     extern bool loop_anim;
     extern bool enable_custom_anim;
+    extern bool mcomp_extra_bone;
 
     extern int player_speed;
     extern int walkpoint_speed;

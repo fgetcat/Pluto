@@ -32,7 +32,6 @@ extern "C" {
 #include <SDL2/SDL.h>
 
 static char animSearchTerm[128];
-PlutoAnim current_panim;
 
 void OpenAnimationsMenu() {
     bool show_controls = true;
@@ -64,9 +63,9 @@ void OpenAnimationsMenu() {
             if (ImGui::BeginTabItem("PAnim")) {
                 enable_custom_anim = true;
                 if (!is_editing_panim) enable_bone_editor = false;
-                if (current_panim.Length == -1) {
-                    current_panim = LoadPAnim("dynos/anims/" + pluto_animations_list[0]);
-                    loop_anim = current_panim.Looping;
+                if (current_pluto_anim.Length == -1) {
+                    current_pluto_anim = LoadPAnim("dynos/anims/" + pluto_animations_list[0]);
+                    loop_anim = current_pluto_anim.Looping;
                 }
 
                 ImGui::BeginChild("###p_anim_select", ImVec2(200, 125), ImGuiChildFlags_Border);
@@ -82,8 +81,9 @@ void OpenAnimationsMenu() {
 
                     if (ImGui::Selectable(pluto_animations_list[n].c_str(), is_selected)) {
                         selected_panim_index = n;
-                        current_panim = LoadPAnim("dynos/anims/" + pluto_animations_list[n]);
-                        loop_anim = current_panim.Looping;
+                        current_pluto_anim = LoadPAnim("dynos/anims/" + pluto_animations_list[n]);
+                        loop_anim = current_pluto_anim.Looping;
+                        mcomp_extra_bone = current_pluto_anim.BoneCount > 20 ? true : false;
                     }
 
                     if (is_selected) ImGui::SetItemDefaultFocus();
@@ -91,8 +91,16 @@ void OpenAnimationsMenu() {
                 ImGui::EndChild();
 
                 ImGui::BeginChild("###p_metadata", ImVec2(200, 48), ImGuiChildFlags_Border);
-                ImGui::Text("%s", current_panim.Name.c_str());
-                ImGui::TextDisabled("@ %s", current_panim.Author.c_str());
+                ImGui::Text("%s", current_pluto_anim.Name.c_str());
+                if (ImGui::BeginItemTooltip()) {
+                    ImGui::TextUnformatted(current_pluto_anim.Name.c_str());
+                    ImGui::EndTooltip();
+                }
+                ImGui::TextDisabled("@ %s", current_pluto_anim.Author.c_str());
+                if (ImGui::BeginItemTooltip()) {
+                    ImGui::TextUnformatted(current_pluto_anim.Author.c_str());
+                    ImGui::EndTooltip();
+                }
                 ImGui::EndChild();
                 ImGui::EndTabItem();
             }
@@ -102,13 +110,19 @@ void OpenAnimationsMenu() {
         ImGui::EndTabBar();
     }
 
-    if (ImGui::Checkbox("Override Animation", &override_anim))
-        if (!override_anim) set_character_animation(&gMarioStates[0], CHAR_ANIM_IDLE_HEAD_LEFT);
+    if (ImGui::Checkbox("Override Animation", &override_anim)) {
+        //if (!pause_anim) gMarioStates[0].marioObj->header.gfx.animInfo.animFrame = 0;
+        if (!override_anim) set_character_animation(&gMarioStates[0], CHAR_ANIM_START_CROUCHING);
+        else {
+            gMarioStates[0].animation->targetAnim->values = 0;
+            gMarioStates[0].animation->targetAnim->index = 0;
+        }
+    }
     ImGui::Separator();
 
     ImGui::BeginDisabled(!override_anim);
-    if (enable_custom_anim && override_anim) ImGui::Text("Now Playing: %s", current_panim.Name.c_str());
-    else ImGui::Text("Now Playing: %s", saturn_animations[gMarioStates[0].marioObj->header.gfx.animInfo.animID]);
+    if (enable_custom_anim && override_anim) ImGui::TextWrapped("Now Playing: %s", current_pluto_anim.Name.c_str());
+    else ImGui::TextWrapped("Now Playing: %s", saturn_animations[gMarioStates[0].marioObj->header.gfx.animInfo.animID]);
     ImGui::BeginDisabled(!pause_anim);
     ImGui::SliderInt("###animation_frame", &paused_frame, gMarioStates[0].marioObj->header.gfx.animInfo.curAnim->loopStart, gMarioStates[0].marioObj->header.gfx.animInfo.curAnim->loopEnd-1, "frame %d", ImGuiSliderFlags_AlwaysClamp);
     ImGui::EndDisabled();
@@ -118,12 +132,13 @@ void OpenAnimationsMenu() {
     ImGui::BeginDisabled(hang_anim);
     ImGui::SameLine(); ImGui::Checkbox("Loop", &loop_anim);
     ImGui::EndDisabled();
+    ImGui::Checkbox("Extra Bone", &mcomp_extra_bone);
 
     // Animation Editor
     if (enable_custom_anim) {
-    ImGui::BeginDisabled(current_panim.Values.size() <= 0 || !pause_anim);
+    ImGui::BeginDisabled(current_pluto_anim.Values.size() <= 0 || !pause_anim);
     if (ImGui::Button("Edit Pose")) is_editing_panim = !is_editing_panim;
-    if (current_panim.Values.size() > 0 && pause_anim && is_editing_panim) {
+    if (current_pluto_anim.Values.size() > 0 && pause_anim && is_editing_panim) {
         ImGui::Begin("Edit Pluto Anim", &is_editing_panim, ImGuiWindowFlags_None);
         if (!enable_bone_editor) {
             struct AnimInfo* anim_info = &gMarioStates[0].marioObj->header.gfx.animInfo;

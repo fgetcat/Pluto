@@ -19,6 +19,7 @@
 #include "course_table.h"
 #include "object_list_processor.h"
 
+#include "saturn/saturn.h"
 #include "saturn/saturn_colors.h"
 
 /**
@@ -971,16 +972,16 @@ static void geo_process_animated_part(struct GraphNodeAnimatedPart *node) {
  */
 static void geo_process_mcomp_extra(struct GraphNodeAnimatedPart *node) {
     // To-do: This
-    /*if (is_anim_playing && current_animation.custom && current_canim_has_extra) {
+    if (override_anim && enable_custom_anim && mcomp_extra_bone) {
         geo_process_animated_part(node);
-    } else {*/
+    } else {
         if (node->displayList != NULL) {
             geo_append_display_list(node->displayList, node->node.flags >> 8);
         }
         if (node->node.children != NULL) {
             geo_process_node_and_siblings(node->node.children);
         }
-    //}
+    }
 }
 
 /**

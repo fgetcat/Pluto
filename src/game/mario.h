@@ -15,6 +15,7 @@ s16 set_mario_animation(struct MarioState *m, s32 targetAnimID);
 s16 set_mario_anim_with_accel(struct MarioState *m, s32 targetAnimID, s32 accel);
 
 s16 set_character_animation(struct MarioState *m, s32 targetAnimID);
+s16 force_set_character_animation(struct MarioState *m, s32 targetAnimID);
 s16 set_character_anim_with_accel(struct MarioState *m, s32 targetAnimID, s32 accel);
 
 void set_anim_to_frame(struct MarioState *m, s16 animFrame);

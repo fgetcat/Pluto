@@ -257,17 +257,17 @@ PlutoAnim LoadPAnim(std::string filePath) {
 
     if (bytes.size() > 0) {
         // Metadata
-        for (int i = 0x00; i < 0x20; i++) {plutoAnim.Name += bytes[i];}
-        for (int j = 0x20; j < 0x40; j++) {plutoAnim.Author += bytes[j];}
+        for (int i = 0x00; i < 0x40; i++) {plutoAnim.Name += bytes[i];}
+        for (int j = 0x40; j < 0x60; j++) {plutoAnim.Author += bytes[j];}
         
-        int length1 = (uint8_t)bytes[0x41];
-        int length2 = (uint8_t)bytes[0x42];
+        int length1 = (uint8_t)bytes[0x61];
+        int length2 = (uint8_t)bytes[0x62];
         plutoAnim.Length = (length1<<8)|(length2);
 
-        plutoAnim.Looping = (uint8_t)bytes[0x40] != 0x00;
-        plutoAnim.Nodes = (uint8_t)bytes[0x43];
+        plutoAnim.Looping = (uint8_t)bytes[0x60] != 0x00;
+        plutoAnim.Nodes = (uint8_t)bytes[0x63];
 
-        std::size_t values_pos = 0x4A;
+        std::size_t values_pos = 0x6A;
         std::size_t indices_pos;
 
         // Values
@@ -303,6 +303,8 @@ PlutoAnim LoadPAnim(std::string filePath) {
                 plutoAnim.Indices.push_back(output);
             }
         }
+
+        plutoAnim.BoneCount = plutoAnim.Indices.size() / 6 - 1;
     }
 
     return plutoAnim;
@@ -350,19 +352,22 @@ u16 bone_anim_indices[126] = {
     0x0001, 0x003A, 0x0001, 0x003B, 0x0001, 0x003C,
 };
 
+PlutoAnim current_pluto_anim;
+
 /* Overwrites the currently played animation with the actively selected PlutoAnim */
 void saturn_play_pluto_animation() {
-    PlutoAnim plutoAnim = LoadPAnim("dynos/anims/" + pluto_animations_list[selected_panim_index]);
+    //set_character_animation(&gMarioStates[0], CHAR_ANIM_FIRST_PERSON);
+    //PlutoAnim plutoAnim = LoadPAnim("dynos/anims/" + pluto_animations_list[selected_panim_index]);
     if (override_anim &&
-    plutoAnim.Values.size() > 0 && plutoAnim.Indices.size() > 0) {
+    current_pluto_anim.Values.size() > 0 && current_pluto_anim.Indices.size() > 0) {
         // Overwrite values
-        gMarioStates[0].animation->targetAnim->flags = 0;
+        gMarioStates[0].animation->targetAnim->flags = 1;
         gMarioStates[0].animation->targetAnim->animYTransDivisor = 0;
         gMarioStates[0].animation->targetAnim->startFrame = 0;
         gMarioStates[0].animation->targetAnim->loopStart = 0;
-        gMarioStates[0].animation->targetAnim->loopEnd = (s16)plutoAnim.Length;
-        gMarioStates[0].animation->targetAnim->unusedBoneCount = plutoAnim.Indices.size() / 6 - 1;
-        gMarioStates[0].animation->targetAnim->values = plutoAnim.Values.data();
+        gMarioStates[0].animation->targetAnim->loopEnd = (s16)current_pluto_anim.Length;
+        gMarioStates[0].animation->targetAnim->unusedBoneCount = current_pluto_anim.Indices.size() / 6 - 1;
+        gMarioStates[0].animation->targetAnim->values = current_pluto_anim.Values.data();
 
         // Animation editor
         if (is_editing_panim && enable_bone_editor) {
@@ -374,10 +379,27 @@ void saturn_play_pluto_animation() {
             }
             gMarioStates[0].animation->targetAnim->index = bone_anim_indices;
             gMarioStates[0].animation->targetAnim->flags = 4;
-        } else gMarioStates[0].animation->targetAnim->index = plutoAnim.Indices.data();
+        } else gMarioStates[0].animation->targetAnim->index = current_pluto_anim.Indices.data();
 
-        gMarioStates[0].animation->targetAnim->length = 0;
+        gMarioStates[0].animation->targetAnim->length = (s16)current_pluto_anim.Length;;
         gMarioStates[0].marioObj->header.gfx.animInfo.curAnim = gMarioStates[0].animation->targetAnim;
         gMarioStates[0].marioObj->header.gfx.animInfo.animYTrans = (is_editing_panim && enable_bone_editor) ? 0xBD : 0x00;
     }
+}
+
+bool saturn_check_for_chainer() {
+    return false;
+    /*if (selected_panim_index >= pluto_animations_list.size() - 1) return false;
+
+    PlutoAnim currentAnim = LoadPAnim("dynos/anims/" + pluto_animations_list[selected_panim_index]);
+    PlutoAnim nextAnim = LoadPAnim("dynos/anims/" + pluto_animations_list[selected_panim_index+1]);
+
+    if (currentAnim.Name.find_last_of(nextAnim.Name + "_") != std::string::npos) {
+        selected_panim_index += 1;
+        gMarioStates[0].marioObj->header.gfx.animInfo.animFrame = 0;
+        override_anim = true;
+        return true;
+    }
+
+    return false;*/
 }

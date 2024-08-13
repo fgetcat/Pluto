@@ -49,6 +49,7 @@ int paused_frame;
 bool hang_anim;
 bool loop_anim;
 bool enable_custom_anim;
+bool mcomp_extra_bone;
 
 int player_speed = 127;
 int walkpoint_speed = 127;
@@ -122,7 +123,7 @@ int saturn_camera_update() {
         // Misc. Animation
         if (gMarioStates[0].marioObj != NULL) {
             if (!pause_anim) paused_frame = gMarioStates[0].marioObj->header.gfx.animInfo.animFrame;
-            if (gMarioStates[0].forwardVel != 0.f && (!pause_anim || enable_custom_anim)) override_anim = false;
+            if (gMarioStates[0].forwardVel != 0.f && !pause_anim) override_anim = false;
         }
 
         return CAM_FROZEN;
@@ -157,7 +158,9 @@ void saturn_action_idle(struct MarioState *m) {
         if (paused_frame < targetAnim->loopStart) paused_frame = targetAnim->loopStart;
     } else
         if (!hang_anim && is_anim_past_end(m) && !targetAnimLooping) {
-            override_anim = false;
-            set_character_animation(m, CHAR_ANIM_IDLE_HEAD_LEFT);
+            if (saturn_check_for_chainer() == false) {
+                override_anim = false;
+                set_mario_animation(m, MARIO_ANIM_START_CROUCHING);
+            }
         }
 }
