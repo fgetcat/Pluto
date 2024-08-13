@@ -28,11 +28,11 @@ extern bool saturn_check_for_chainer();
 
 extern std::vector<std::string> pluto_animations_list;
 
-extern s16 bone_anim_values[61];
+extern s16 bone_anim_values[63];
 extern u16 bone_anim_indices[126];
 extern bool is_editing_panim;
 extern bool enable_bone_editor;
-extern Vec3f bone_rotations[20];
+extern Vec3f bone_rotations[21];
 
 extern PlutoAnim current_pluto_anim;
 

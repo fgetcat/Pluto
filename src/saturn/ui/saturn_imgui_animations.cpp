@@ -140,24 +140,9 @@ void OpenAnimationsMenu() {
     if (ImGui::Button("Edit Pose")) is_editing_panim = !is_editing_panim;
     if (current_pluto_anim.Values.size() > 0 && pause_anim && is_editing_panim) {
         ImGui::Begin("Edit Pluto Anim", &is_editing_panim, ImGuiWindowFlags_None);
-        if (!enable_bone_editor) {
-            struct AnimInfo* anim_info = &gMarioStates[0].marioObj->header.gfx.animInfo;
-            const u16* index = anim_info->curAnim->index;
-            index += 6;
-            for (int i = 0; i < 20; i++) {
-                for (int j = 0; j < 3; j++) {
-                    int frame = anim_info->animFrame;
-                    int offset = 0;
-                    if (frame < index[0]) offset = index[1] + frame;
-                    else offset = index[1] + index[0] - 1;
-                    index += 2;
-                    bone_rotations[i][j] = (float)(anim_info->curAnim->values[offset]) * 360.f / 65536.f;
-                }
-            }
-            enable_bone_editor = true;
-        }
         int currbone = 0;
 #define BONE_ENTRY(name) ImGui::DragFloat3(name, bone_rotations[currbone++]);
+        BONE_ENTRY("Translation"    );
         BONE_ENTRY("Root"           );
         BONE_ENTRY("Body"           );
         BONE_ENTRY("Torso"          );
