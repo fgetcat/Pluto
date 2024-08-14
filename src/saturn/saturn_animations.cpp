@@ -241,7 +241,11 @@ const char* saturn_animations[] = {
 std::vector<std::string> pluto_animations_list;
 bool is_editing_panim;
 bool enable_bone_editor;
-Vec3f bone_rotations[20];
+Vec3f bone_rotations[21];
+
+s16 ReadS16(std::vector<char> data, int index) {
+    return ((unsigned int)(unsigned char)data[index] << 8) | (unsigned int)(unsigned char)data[index + 1];
+}
 
 /* Loads a PlutoAnim struct from a given filepath */
 PlutoAnim LoadPAnim(std::string filePath) {
@@ -271,37 +275,17 @@ PlutoAnim LoadPAnim(std::string filePath) {
         std::size_t indices_pos;
 
         // Values
-        std::vector<std::string> values;
-        for (int v = values_pos; v < bytes.size(); v++) {
-            if (bytes[v] == 'i' && bytes[v+1] == 'n' && bytes[v+2] == 'd' && bytes[v+3] == 'i' && bytes[v+4] == 'c' && bytes[v+5] == 'e' && bytes[v+6] == 's') {
-                indices_pos = v + 0x08;
+        for (int v = values_pos; v < bytes.size(); v += 2) {
+            if (strncmp(bytes.data() + v, "indices", 7) == 0) {
+                indices_pos = v + 7;
                 break;
             }
-            if (v % 2 != 0 && v > 0) {
-                std::stringstream first, second;
-                first << std::setfill('0') << std::setw(2) << std::hex << (0xff & (unsigned int)bytes[v-1]);
-                second << std::setfill('0') << std::setw(2) << std::hex << (0xff & (unsigned int)bytes[v]);
-
-                int output = std::stoi(first.str(), 0, 16) * 256 + std::stoi(second.str(), 0, 16);
-                values.push_back(std::to_string(output));
-
-                plutoAnim.Values.push_back(output);
-            }
+            plutoAnim.Values.push_back(ReadS16(bytes, v));
         }
 
         // Indices
-        std::vector<std::string> indices;
-        for (int i = indices_pos; i < bytes.size(); i++) {
-            if (i % 2 == 0 && i > 0) {
-                std::stringstream first, second;
-                first << std::setfill('0') << std::setw(2) << std::hex << (0xff & (unsigned int)bytes[i-1]);
-                second << std::setfill('0') << std::setw(2) << std::hex << (0xff & (unsigned int)bytes[i]);
-
-                int output = std::stoi(first.str(), 0, 16) * 256 + std::stoi(second.str(), 0, 16);
-                indices.push_back(std::to_string(output));
-
-                plutoAnim.Indices.push_back(output);
-            }
+        for (int i = indices_pos; i < bytes.size(); i += 2) {
+            plutoAnim.Indices.push_back(ReadS16(bytes, i));
         }
 
         plutoAnim.BoneCount = plutoAnim.Indices.size() / 6 - 1;
@@ -327,29 +311,29 @@ std::vector<std::string> GetPAnimList(std::string folderPath) {
     return panim_list;
 }
 
-s16 bone_anim_values[61];
+s16 bone_anim_values[63];
 u16 bone_anim_indices[126] = {
-    0x0001, 0x0000, 0x0001, 0x0000, 0x0001, 0x0000,
-    0x0001, 0x0001, 0x0001, 0x0002, 0x0001, 0x0003,
-    0x0001, 0x0004, 0x0001, 0x0005, 0x0001, 0x0006,
-    0x0001, 0x0007, 0x0001, 0x0008, 0x0001, 0x0009,
-    0x0001, 0x000A, 0x0001, 0x000B, 0x0001, 0x000C,
-    0x0001, 0x000F, 0x0001, 0x000E, 0x0001, 0x000F,
-    0x0001, 0x0010, 0x0001, 0x0011, 0x0001, 0x0012,
-    0x0001, 0x0013, 0x0001, 0x0014, 0x0001, 0x0015,
-    0x0001, 0x0016, 0x0001, 0x0017, 0x0001, 0x0018,
-    0x0001, 0x0019, 0x0001, 0x001A, 0x0001, 0x001B,
-    0x0001, 0x001C, 0x0001, 0x001D, 0x0001, 0x001E,
-    0x0001, 0x001F, 0x0001, 0x0020, 0x0001, 0x0021,
-    0x0001, 0x0022, 0x0001, 0x0023, 0x0001, 0x0024,
-    0x0001, 0x0025, 0x0001, 0x0026, 0x0001, 0x0027,
-    0x0001, 0x0028, 0x0001, 0x0029, 0x0001, 0x002A,
-    0x0001, 0x002B, 0x0001, 0x002C, 0x0001, 0x002D,
-    0x0001, 0x002E, 0x0001, 0x002F, 0x0001, 0x0030,
-    0x0001, 0x0031, 0x0001, 0x0032, 0x0001, 0x0033,
-    0x0001, 0x0034, 0x0001, 0x0035, 0x0001, 0x0036,
-    0x0001, 0x0037, 0x0001, 0x0038, 0x0001, 0x0039,
-    0x0001, 0x003A, 0x0001, 0x003B, 0x0001, 0x003C,
+    0x0001, 0x0000, 0x0001, 0x0001, 0x0001, 0x0002,
+    0x0001, 0x0003, 0x0001, 0x0004, 0x0001, 0x0005,
+    0x0001, 0x0006, 0x0001, 0x0007, 0x0001, 0x0008,
+    0x0001, 0x0009, 0x0001, 0x000A, 0x0001, 0x000B,
+    0x0001, 0x000C, 0x0001, 0x000D, 0x0001, 0x000E,
+    0x0001, 0x000F, 0x0001, 0x0010, 0x0001, 0x0011,
+    0x0001, 0x0012, 0x0001, 0x0013, 0x0001, 0x0014,
+    0x0001, 0x0015, 0x0001, 0x0016, 0x0001, 0x0017,
+    0x0001, 0x0018, 0x0001, 0x0019, 0x0001, 0x001A,
+    0x0001, 0x001B, 0x0001, 0x001C, 0x0001, 0x001D,
+    0x0001, 0x001E, 0x0001, 0x001F, 0x0001, 0x0020,
+    0x0001, 0x0021, 0x0001, 0x0022, 0x0001, 0x0023,
+    0x0001, 0x0024, 0x0001, 0x0025, 0x0001, 0x0026,
+    0x0001, 0x0027, 0x0001, 0x0028, 0x0001, 0x0029,
+    0x0001, 0x002A, 0x0001, 0x002B, 0x0001, 0x002C,
+    0x0001, 0x002D, 0x0001, 0x002E, 0x0001, 0x002F,
+    0x0001, 0x0030, 0x0001, 0x0031, 0x0001, 0x0032,
+    0x0001, 0x0033, 0x0001, 0x0034, 0x0001, 0x0035,
+    0x0001, 0x0036, 0x0001, 0x0037, 0x0001, 0x0038,
+    0x0001, 0x0039, 0x0001, 0x003A, 0x0001, 0x003B,
+    0x0001, 0x003C, 0x0001, 0x003D, 0x0001, 0x003E,
 };
 
 PlutoAnim current_pluto_anim;
@@ -360,46 +344,58 @@ void saturn_play_pluto_animation() {
     //PlutoAnim plutoAnim = LoadPAnim("dynos/anims/" + pluto_animations_list[selected_panim_index]);
     if (override_anim &&
     current_pluto_anim.Values.size() > 0 && current_pluto_anim.Indices.size() > 0) {
+        // For some reason reading from the anim directly causes issues and copying over it this way seems to fix it
+        if (!is_editing_panim) {
+            struct AnimInfo* anim_info = &gMarioStates[0].marioObj->header.gfx.animInfo;
+            const u16* index = current_pluto_anim.Indices.data();
+            for (int i = 0; i < 21; i++) {
+                for (int j = 0; j < 3; j++) {
+                    int frame = anim_info->animFrame;
+                    int offset = 0;
+                    if (frame < index[0]) offset = index[1] + frame;
+                    else offset = index[1] + index[0] - 1;
+                    index += 2;
+                    bone_rotations[i][j] = (float)(current_pluto_anim.Values[offset]) * (i == 0 ? 1 : 360.f / 65536);
+                }
+            }
+        }
+
         // Overwrite values
+        for (int i = 0; i < 21; i++) {
+            for (int j = 0; j < 3; j++) {
+                bone_anim_values[i * 3 + j] = bone_rotations[i][j] * (i == 0 ? 1 : 65536 / 360);
+            }
+        }
         gMarioStates[0].animation->targetAnim->flags = 1;
         gMarioStates[0].animation->targetAnim->animYTransDivisor = 0;
         gMarioStates[0].animation->targetAnim->startFrame = 0;
         gMarioStates[0].animation->targetAnim->loopStart = 0;
         gMarioStates[0].animation->targetAnim->loopEnd = (s16)current_pluto_anim.Length;
         gMarioStates[0].animation->targetAnim->unusedBoneCount = current_pluto_anim.Indices.size() / 6 - 1;
-        gMarioStates[0].animation->targetAnim->values = current_pluto_anim.Values.data();
-
-        // Animation editor
-        if (is_editing_panim && enable_bone_editor) {
-            for (int i = 0; i < 20; i++) {
-                for (int j = 0; j < 3; j++) {
-                    bone_anim_values[1 + i * 3 + j] = bone_rotations[i][j] * 65536 / 360;
-                    gMarioStates[0].animation->targetAnim->values = bone_anim_values;
-                }
-            }
-            gMarioStates[0].animation->targetAnim->index = bone_anim_indices;
-            gMarioStates[0].animation->targetAnim->flags = 4;
-        } else gMarioStates[0].animation->targetAnim->index = current_pluto_anim.Indices.data();
-
-        gMarioStates[0].animation->targetAnim->length = (s16)current_pluto_anim.Length;;
+        gMarioStates[0].animation->targetAnim->values = bone_anim_values;
+        gMarioStates[0].animation->targetAnim->index = bone_anim_indices;
+        gMarioStates[0].animation->targetAnim->flags = is_editing_panim ? ANIM_FLAG_2 : 0;
+        gMarioStates[0].animation->targetAnim->length = (s16)current_pluto_anim.Length;
         gMarioStates[0].marioObj->header.gfx.animInfo.curAnim = gMarioStates[0].animation->targetAnim;
-        gMarioStates[0].marioObj->header.gfx.animInfo.animYTrans = (is_editing_panim && enable_bone_editor) ? 0xBD : 0x00;
+        gMarioStates[0].marioObj->header.gfx.animInfo.animYTrans = 0xBD;
     }
 }
 
 bool saturn_check_for_chainer() {
-    return false;
-    /*if (selected_panim_index >= pluto_animations_list.size() - 1) return false;
+    if (!enable_custom_anim) return false;
+    if (selected_panim_index >= pluto_animations_list.size() - 1) return false;
 
     PlutoAnim currentAnim = LoadPAnim("dynos/anims/" + pluto_animations_list[selected_panim_index]);
     PlutoAnim nextAnim = LoadPAnim("dynos/anims/" + pluto_animations_list[selected_panim_index+1]);
 
-    if (currentAnim.Name.find_last_of(nextAnim.Name + "_") != std::string::npos) {
+    std::string key = pluto_animations_list[selected_panim_index].substr(0, pluto_animations_list[selected_panim_index].find_last_of("_"));
+    if (pluto_animations_list[selected_panim_index+1].find(key + "_") != std::string::npos) {
         selected_panim_index += 1;
+        current_pluto_anim = nextAnim;
         gMarioStates[0].marioObj->header.gfx.animInfo.animFrame = 0;
         override_anim = true;
         return true;
     }
 
-    return false;*/
+    return false;
 }

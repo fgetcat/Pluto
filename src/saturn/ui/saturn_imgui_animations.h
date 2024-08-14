@@ -10,6 +10,7 @@
 
 extern "C" {
 #endif
+extern void BoneEditorWindow();
 extern void OpenAnimationsMenu();
 #ifdef __cplusplus
 }

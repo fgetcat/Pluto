@@ -33,13 +33,44 @@ extern "C" {
 
 static char animSearchTerm[128];
 
+void BoneEditorWindow() {
+    if (current_pluto_anim.Values.size() > 0 && pause_anim && is_editing_panim) {
+        ImGui::Begin("Animation Pose Editor", &is_editing_panim, ImGuiWindowFlags_AlwaysAutoResize);
+        int currbone = 0;
+#define BONE_ENTRY(name) ImGui::DragFloat3(name, bone_rotations[currbone++]);
+        BONE_ENTRY("Translation"    );
+        BONE_ENTRY("Root"           );
+        BONE_ENTRY("Body"           );
+        BONE_ENTRY("Torso"          );
+        BONE_ENTRY("Head"           );
+        BONE_ENTRY("Left Arm"       );
+        BONE_ENTRY("Upper Left Arm" );
+        BONE_ENTRY("Lower Left Arm" );
+        BONE_ENTRY("Left Hand"      );
+        BONE_ENTRY("Right Arm"      );
+        BONE_ENTRY("Upper Right Arm");
+        BONE_ENTRY("Lower Right Arm");
+        BONE_ENTRY("Right Hand"     );
+        BONE_ENTRY("Left Leg"       );
+        BONE_ENTRY("Upper Left Leg" );
+        BONE_ENTRY("Lower Left Leg" );
+        BONE_ENTRY("Left Foot"      );
+        BONE_ENTRY("Right Leg"      );
+        BONE_ENTRY("Upper Right Leg");
+        BONE_ENTRY("Lower Right Leg");
+        BONE_ENTRY("Right Foot"     );
+#undef BONE_ENTRY
+        ImGui::End();
+    }
+}
+
 void OpenAnimationsMenu() {
     bool show_controls = true;
     if (ImGui::BeginTabBar("###animation_tab_bar")) {
         if (ImGui::BeginTabItem("Vanilla")) {
             enable_custom_anim = false;
             enable_bone_editor = false;
-            ImGui::SetNextItemWidth(200);
+            ImGui::SetNextItemWidth(208);
             if (ImGui::BeginCombo("###v_anim_combo", saturn_animations[selected_anim_index], ImGuiComboFlags_None)) {
                 ImGui::InputTextWithHint("###anim_search", "Search...", animSearchTerm, IM_ARRAYSIZE(animSearchTerm), ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_CharsUppercase);
                 ImGui::Separator();
@@ -68,8 +99,8 @@ void OpenAnimationsMenu() {
                     loop_anim = current_pluto_anim.Looping;
                 }
 
-                ImGui::BeginChild("###p_anim_select", ImVec2(200, 125), ImGuiChildFlags_Border);
-                ImGui::SetNextItemWidth(200);
+                ImGui::BeginChild("###p_anim_select", ImVec2(208, 150), ImGuiChildFlags_Border);
+                ImGui::SetNextItemWidth(208);
                 ImGui::InputTextWithHint("###anim_search", "Search...", animSearchTerm, IM_ARRAYSIZE(animSearchTerm), ImGuiInputTextFlags_AutoSelectAll);
                 ImGui::Separator();
                 for (int n = 0; n < pluto_animations_list.size(); n++) {
@@ -90,7 +121,7 @@ void OpenAnimationsMenu() {
                 }
                 ImGui::EndChild();
 
-                ImGui::BeginChild("###p_metadata", ImVec2(200, 48), ImGuiChildFlags_Border);
+                ImGui::BeginChild("###p_metadata", ImVec2(208, 48), ImGuiChildFlags_Border);
                 ImGui::Text("%s", current_pluto_anim.Name.c_str());
                 if (ImGui::BeginItemTooltip()) {
                     ImGui::TextUnformatted(current_pluto_anim.Name.c_str());
@@ -132,55 +163,12 @@ void OpenAnimationsMenu() {
     ImGui::BeginDisabled(hang_anim);
     ImGui::SameLine(); ImGui::Checkbox("Loop", &loop_anim);
     ImGui::EndDisabled();
-    ImGui::Checkbox("Extra Bone", &mcomp_extra_bone);
+    //ImGui::Checkbox("Extra Bone", &mcomp_extra_bone);
 
     // Animation Editor
     if (enable_custom_anim) {
     ImGui::BeginDisabled(current_pluto_anim.Values.size() <= 0 || !pause_anim);
     if (ImGui::Button("Edit Pose")) is_editing_panim = !is_editing_panim;
-    if (current_pluto_anim.Values.size() > 0 && pause_anim && is_editing_panim) {
-        ImGui::Begin("Edit Pluto Anim", &is_editing_panim, ImGuiWindowFlags_None);
-        if (!enable_bone_editor) {
-            struct AnimInfo* anim_info = &gMarioStates[0].marioObj->header.gfx.animInfo;
-            const u16* index = anim_info->curAnim->index;
-            index += 6;
-            for (int i = 0; i < 20; i++) {
-                for (int j = 0; j < 3; j++) {
-                    int frame = anim_info->animFrame;
-                    int offset = 0;
-                    if (frame < index[0]) offset = index[1] + frame;
-                    else offset = index[1] + index[0] - 1;
-                    index += 2;
-                    bone_rotations[i][j] = (float)(anim_info->curAnim->values[offset]) * 360.f / 65536.f;
-                }
-            }
-            enable_bone_editor = true;
-        }
-        int currbone = 0;
-#define BONE_ENTRY(name) ImGui::DragFloat3(name, bone_rotations[currbone++]);
-        BONE_ENTRY("Root"           );
-        BONE_ENTRY("Body"           );
-        BONE_ENTRY("Torso"          );
-        BONE_ENTRY("Head"           );
-        BONE_ENTRY("Left Arm"       );
-        BONE_ENTRY("Upper Left Arm" );
-        BONE_ENTRY("Lower Left Arm" );
-        BONE_ENTRY("Left Hand"      );
-        BONE_ENTRY("Right Arm"      );
-        BONE_ENTRY("Upper Right Arm");
-        BONE_ENTRY("Lower Right Arm");
-        BONE_ENTRY("Right Hand"     );
-        BONE_ENTRY("Left Leg"       );
-        BONE_ENTRY("Upper Left Leg" );
-        BONE_ENTRY("Lower Left Leg" );
-        BONE_ENTRY("Left Foot"      );
-        BONE_ENTRY("Right Leg"      );
-        BONE_ENTRY("Upper Right Leg");
-        BONE_ENTRY("Lower Right Leg");
-        BONE_ENTRY("Right Foot"     );
-#undef BONE_ENTRY
-        ImGui::End();
-    }
     ImGui::EndDisabled();
     }
 }
