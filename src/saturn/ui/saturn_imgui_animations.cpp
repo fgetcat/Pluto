@@ -144,10 +144,6 @@ void OpenAnimationsMenu() {
     if (ImGui::Checkbox("Override Animation", &override_anim)) {
         //if (!pause_anim) gMarioStates[0].marioObj->header.gfx.animInfo.animFrame = 0;
         if (!override_anim) set_character_animation(&gMarioStates[0], CHAR_ANIM_START_CROUCHING);
-        else {
-            gMarioStates[0].animation->targetAnim->values = 0;
-            gMarioStates[0].animation->targetAnim->index = 0;
-        }
     }
     ImGui::Separator();
 
