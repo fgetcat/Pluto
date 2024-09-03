@@ -123,6 +123,7 @@ void imgui_update() {
 
                 if (ImGui::MenuItem("Animation", NULL, show_window_animations, freeze_camera && !enable_head_rotation)) show_window_animations = !show_window_animations;
 
+                // Model Selector
                 ImGui::Separator();
                 OpenModelSelector();
                 ImGui::EndMenu();
@@ -153,7 +154,7 @@ void imgui_update() {
 
         // Machinima
         if (show_window_machinima) {
-            // Freeze Camera
+            // Camera
             ImGui::Begin("Machinima", &show_window_machinima, ImGuiWindowFlags_AlwaysAutoResize);
             ImGui::Checkbox("Freeze Camera", &freeze_camera);
             ImGui::BeginDisabled(!freeze_camera);
@@ -162,9 +163,9 @@ void imgui_update() {
             ImGui::EndDisabled();
             ImGui::SliderFloat("###camera_fov", &camera_fov, 0.f, 100.f, "FOV %.1f");
             ImGui::PopItemWidth();
-
             ImGui::Dummy(ImVec2(0, 15));
 
+            // Walkpoint
             ImGui::SetNextItemWidth(150);
             ImGui::SliderInt("###walkpoint", &walkpoint_speed, 0, 127, "Walkpoint %d");
             if (ImGui::IsItemHovered() && ImGui::IsMouseReleased(ImGuiMouseButton_Right))
@@ -177,7 +178,7 @@ void imgui_update() {
             }
             ImGui::Dummy(ImVec2(0, 15));
 
-            // Angle
+            // Rotation Angle
             if (gMarioStates[0].marioObj != NULL) {
             if (ImGuiKnobs::Knob("Angle", &face_angle, -180.f, 180.f, 0.f, "%.0f deg", ImGuiKnobVariant_Dot, 0.f, ImGuiKnobFlags_DragHorizontal))
                 gMarioStates[0].faceAngle[1] = (s16)(face_angle * 182.04f);

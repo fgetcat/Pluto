@@ -67,6 +67,7 @@ void BoneEditorWindow() {
 void OpenAnimationsMenu() {
     bool show_controls = true;
     if (ImGui::BeginTabBar("###animation_tab_bar")) {
+        // Vanilla Animations
         if (ImGui::BeginTabItem("Vanilla")) {
             enable_custom_anim = false;
             ImGui::SetNextItemWidth(208);
@@ -95,6 +96,7 @@ void OpenAnimationsMenu() {
         if (pluto_animations_list.size() > 0) {
             if (ImGui::BeginTabItem("PAnim")) {
                 enable_custom_anim = true;
+                // On first run, initialize a PAnim
                 if (current_pluto_anim.Length == -1) {
                     current_pluto_anim = LoadPAnim(pluto_animations_list[0].FilePath);
                     loop_anim = current_pluto_anim.Looping;
@@ -122,6 +124,7 @@ void OpenAnimationsMenu() {
                 }
                 ImGui::EndChild();
 
+                // Metadata
                 ImGui::BeginChild("###p_metadata", ImVec2(208, 48), ImGuiChildFlags_Border);
                 ImGui::Text("%s", current_pluto_anim.Name.c_str());
                 if (ImGui::BeginItemTooltip()) {
