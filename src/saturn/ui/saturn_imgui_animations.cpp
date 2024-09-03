@@ -79,8 +79,10 @@ void OpenAnimationsMenu() {
                         std::string(animSearchTerm) != "")
                         continue;
 
-                    if (ImGui::Selectable(saturn_animations[n], is_selected))
+                    if (ImGui::Selectable(saturn_animations[n], is_selected)) {
                         selected_anim_index = n;
+                        if (override_anim && !pause_anim) gMarioStates[0].marioObj->header.gfx.animInfo.animFrame = 0;
+                    }
 
                     if (is_selected) ImGui::SetItemDefaultFocus();
                 }
@@ -91,8 +93,17 @@ void OpenAnimationsMenu() {
         if (ImGui::IsItemClicked()) {
             force_set_character_animation(&gMarioStates[0], CHAR_ANIM_FIRST_PERSON);
         }
+
+        // Pluto Animations
+        ImGui::BeginDisabled(pluto_animations_list.size() <= 0);
+        enable_custom_anim = ImGui::BeginTabItem("PAnim");
+        ImGui::EndDisabled();
+        // Refresh the list every time the tab opens
+        if (ImGui::IsMouseClicked(0) && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+            pluto_animations_list = GetPAnimList("dynos/anims");
+
         if (pluto_animations_list.size() > 0) {
-            if (ImGui::BeginTabItem("PAnim")) {
+            if (enable_custom_anim) {
                 // On first run, initialize a PAnim
                 if (current_pluto_anim.Length == -1) {
                     current_pluto_anim = LoadPAnim(pluto_animations_list[0].FilePath);
@@ -115,6 +126,7 @@ void OpenAnimationsMenu() {
                         current_pluto_anim = LoadPAnim(pluto_animations_list[n].FilePath);
                         loop_anim = current_pluto_anim.Looping;
                         mcomp_extra_bone = current_pluto_anim.BoneCount > 20 ? true : false;
+                        if (override_anim && !pause_anim) gMarioStates[0].marioObj->header.gfx.animInfo.animFrame = 0;
                     }
 
                     if (is_selected) ImGui::SetItemDefaultFocus();
@@ -135,9 +147,6 @@ void OpenAnimationsMenu() {
                 }
                 ImGui::EndChild();
                 ImGui::EndTabItem();
-            }
-            if (ImGui::IsItemClicked()) {
-                pluto_animations_list = GetPAnimList("dynos/anims");
             }
         }
         ImGui::EndTabBar();
