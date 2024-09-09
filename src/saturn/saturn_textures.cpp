@@ -44,21 +44,22 @@ static u8 *RGBA32_RGBA16(const u8 *aData, u64 aLength) {
     return _Buffer;
 }
 
-/* Fetches a TexturePath's raw texture data */
+/* Fetches a TexturePath's raw texture data in RGBA32 format */
 u8* GetTextureData(TexturePath Texture, int* Width, int* Height) {
     if (Texture.RawData != 0) return Texture.RawData;
 
-    std::cout << "Loading " << Texture.FilePath << std::endl;
-
+    // Open texture file for reading
     FILE *TextureFile = fopen(Texture.FilePath.c_str(), "rb");
     if (!TextureFile) return 0;
 
+    // Scan as PNG data
     fseek(TextureFile, 0, SEEK_END);
     TexData* TextureData = New<TexData>();
     TextureData->mPngData.Resize(ftell(TextureFile)); rewind(TextureFile);
     fread(TextureData->mPngData.begin(), sizeof(u8), TextureData->mPngData.Count(), TextureFile);
     fclose(TextureFile);
 
+    // Convert to RGBA-32 texture data
     u8 *RawData = stbi_load_from_memory(TextureData->mPngData.begin(), TextureData->mPngData.Count(), &TextureData->mRawWidth, &TextureData->mRawHeight, NULL, 4);
     std::cout << Texture.FilePath << " --> w" << TextureData->mRawWidth << " h" << TextureData->mRawHeight << " c-> " << TextureData->mPngData.Count() << std::endl;
     TextureData->mRawFormat = G_IM_FMT_RGBA;
@@ -66,7 +67,10 @@ u8* GetTextureData(TexturePath Texture, int* Width, int* Height) {
     TextureData->mRawData   = Array<u8>(RawData, RawData + (TextureData->mRawWidth * TextureData->mRawHeight * 4));
     free(RawData);
 
-    u8 *_Buffer = TextureData->mRawData.begin(); /* RGBA-16 */ //RGBA32_RGBA16(TextureData->mRawData.begin(), TextureData->mRawData.Count());
+    // RGBA-32 buffer
+    // RGBA-16 is unused here, maybe support for conversion eventually
+    u8 *_Buffer = TextureData->mRawData.begin();
+    /* RGBA-16 */ //RGBA32_RGBA16(TextureData->mRawData.begin(), TextureData->mRawData.Count());
 
     gfx_get_current_rendering_api()->select_texture(0, 0);
     gfx_get_current_rendering_api()->upload_texture(_Buffer, TextureData->mRawWidth, TextureData->mRawHeight);
@@ -156,6 +160,7 @@ Expression LoadEyesFolder() {
     return VanillaEyes;
 }
 
+/* Returns the number of "valid expressions" in a list- i.e. expressions that are actually editable in the UI, excluding eyes */
 int GetValidExpressionCount(std::vector<Expression> expressions_list) {
     int count;
     for (Expression expression : expressions_list) {
