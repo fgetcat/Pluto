@@ -13,7 +13,6 @@
 #include "saturn/libs/imgui/imgui_internal.h"
 #include "saturn/libs/imgui/imgui_impl_sdl.h"
 #include "saturn/libs/imgui/imgui_impl_opengl3.h"
-#include "saturn/libs/imgui/imgui_impl_opengl3_loader.h"
 extern "C" {
     #include "pc/pc_main.h"
     #include "pc/gfx/gfx_pc.h"

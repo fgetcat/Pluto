@@ -15,7 +15,6 @@
 #include "saturn/libs/imgui/imgui_internal.h"
 #include "saturn/libs/imgui/imgui_impl_sdl.h"
 #include "saturn/libs/imgui/imgui_impl_opengl3.h"
-#include "saturn/libs/imgui/imgui_impl_opengl3_loader.h"
 #include "pc/djui/djui.h"
 #include "pc/djui/djui_chat_box.h"
 #include "pc/djui/djui_console.h"
