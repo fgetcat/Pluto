@@ -720,21 +720,21 @@ static void gfx_opengl_start_frame(void) {
         glDisable(GL_MULTISAMPLE);
     }
 
-    if (capture_screenshot && (skybox_has_deinit || !screenshot_hides_skybox)) {
-        glGenFramebuffers(1, &framebuffer_id);
-        glBindFramebuffer(GL_FRAMEBUFFER, framebuffer_id);
-        glGenTextures(1, &rendertexture_id);
-        glBindTexture(GL_TEXTURE_2D, rendertexture_id);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, gfx_current_dimensions.width, gfx_current_dimensions.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, rendertexture_id, 0);
-        glGenRenderbuffers(1, &depthbuffer_id);
-        glBindRenderbuffer(GL_RENDERBUFFER, depthbuffer_id);
-        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, gfx_current_dimensions.width, gfx_current_dimensions.height);
-        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthbuffer_id);
+    glGenFramebuffers(1, &framebuffer_id);
+    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer_id);
+    glGenTextures(1, &rendertexture_id);
+    glBindTexture(GL_TEXTURE_2D, rendertexture_id);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, rendertexture_id, 0);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, gfx_current_dimensions.width, gfx_current_dimensions.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glGenRenderbuffers(1, &depthbuffer_id);
+    glBindRenderbuffer(GL_RENDERBUFFER, depthbuffer_id);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, gfx_current_dimensions.width, gfx_current_dimensions.height);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthbuffer_id);
+
+    if (capture_screenshot && (skybox_has_deinit || !screenshot_hides_skybox))
         framebuffer_created = true;
-    }
 
     glDisable(GL_SCISSOR_TEST);
     glDepthMask(GL_TRUE); // Must be set to clear Z-buffer
@@ -750,8 +750,14 @@ static void gfx_opengl_end_frame(void) {
     if (framebuffer_created) {
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         imgui_capture_screenshot((void*)(intptr_t)rendertexture_id);
+    } else {
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, framebuffer_id);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+        glBlitFramebuffer(0, 0, gfx_current_dimensions.width, gfx_current_dimensions.height, 0, 0, gfx_current_dimensions.width, gfx_current_dimensions.height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
     }
+
     imgui_update();
+
     if (framebuffer_created) {
         glDeleteFramebuffers(1, &framebuffer_id);
         glDeleteRenderbuffers(1, &depthbuffer_id);
@@ -761,6 +767,9 @@ static void gfx_opengl_end_frame(void) {
 }
 
 static void gfx_opengl_finish_render(void) {
+    glDeleteFramebuffers(1, &framebuffer_id);
+    glDeleteRenderbuffers(1, &depthbuffer_id);
+    glDeleteTextures(1, &rendertexture_id);
 }
 
 static void gfx_opengl_shutdown(void) {

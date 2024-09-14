@@ -242,7 +242,6 @@ static void gfx_sdl_swap_buffers_begin(void) {
 }
 
 static void gfx_sdl_swap_buffers_end(void) {
-    imgui_update();
 }
 
 static double gfx_sdl_get_time(void) {
