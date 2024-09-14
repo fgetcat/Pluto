@@ -73,6 +73,8 @@ void LoadModelData(int index, bool enabled) {
     if (!pack->mLoaded) return;
 
     if (IsSaturnModel(index)) {
+        active_saturn_model_index = -1;
+        
         model_color_code_list = GetColorCodeList(pack->mPath + "/colorcodes");
 
         /*current_color_code = LoadGSFile(model_color_code_list[0], pack->mPath + "/colorcodes");
@@ -86,8 +88,10 @@ void LoadModelData(int index, bool enabled) {
         }*/
 
         // Load expressions list
-        if (enabled || index == DynOS_Pack_GetCount() - 1)
+        if (enabled || index == DynOS_Pack_GetCount() - 1) {
+            current_expressions.clear();
             current_expressions = LoadExpressions(pack->mPath);
+        }
 
         for (Expression expression : current_expressions) {
             if (expression.Textures.size() > 0) expression.CurrentIndex = 0;

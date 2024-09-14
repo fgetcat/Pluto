@@ -172,7 +172,9 @@ void imgui_update() {
         }
 
         // Model Packs
+        if (gMarioStates[0].marioObj != NULL) {
         OpenModelSettings();
+        }
 
         // Machinima
         if (show_window_machinima) {

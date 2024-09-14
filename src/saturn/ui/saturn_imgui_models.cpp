@@ -108,7 +108,7 @@ void OpenEyeSelector() {
 }
 
 void OpenModelExpressionSelector(PackData* pack) {
-    if (!pack->mEnabled || !IsSaturnModel(pack->mIndex) || current_expressions.size() <= 0) return;
+    if (!pack->mEnabled || !IsSaturnModel(pack->mIndex) || current_expressions.size() <= 0 || active_saturn_model_index == -1) return;
     if (model_color_code_list.size() > 0) ImGui::Separator();
 
     if (current_expressions[0].Name == "eyes") {
@@ -198,7 +198,7 @@ void OpenModelExpressionSelector(PackData* pack) {
 }
 
 void OpenModelCCSelector(PackData* pack, std::vector<std::string> cc_list) {
-    if (!IsSaturnModel(pack->mIndex)) return;
+    if (!IsSaturnModel(pack->mIndex) || active_saturn_model_index == -1) return;
 
     ImGui::BeginChild("###menu_model_cc_selector", ImVec2(200, 100), ImGuiChildFlags_Border);
     for (int n = 0; n < cc_list.size(); n++) {
