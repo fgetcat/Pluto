@@ -7,13 +7,15 @@
 #include "saturn/saturn_textures.h"
 #include "saturn/saturn_colors.h"
 
-#include <SDL2/SDL.h>
-
 #if defined(__MINGW32__) || defined(OSX_BUILD)
 # define GLEW_STATIC
 # include <GL/glew.h>
 #endif
 #define GL_GLEXT_PROTOTYPES 1
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_opengl.h>
+#include <SDL2/SDL_opengl_glext.h>
+
 #include <stb/stb_image_write.h>
 
 #include "saturn/ui/saturn_imgui_colors.h"
