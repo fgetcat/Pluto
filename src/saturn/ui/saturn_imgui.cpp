@@ -242,34 +242,60 @@ void imgui_update() {
 
 bool skybox_has_deinit = false;
 void imgui_capture_screenshot(void* buffer) {
-    uint64_t export_size = (uint64_t)gfx_current_dimensions.width * (uint64_t)gfx_current_dimensions.height * 4;
-    unsigned char* image = (unsigned char*)malloc(export_size);
-    unsigned char* flipped_image = (unsigned char*)malloc(export_size);
-    glBindTexture(GL_TEXTURE_2D, (GLuint)(intptr_t)buffer);
-    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, image);
-    glBindTexture(GL_TEXTURE_2D, 0);
+    // Create a new single-sample framebuffer and texture
+    GLuint resolve_framebuffer_id;
+    GLuint resolve_texture_id;
+    glGenFramebuffers(1, &resolve_framebuffer_id);
+    glBindFramebuffer(GL_FRAMEBUFFER, resolve_framebuffer_id);
 
-    for (uint64_t y = 0; y < gfx_current_dimensions.height; y++) {
-        for (uint64_t x = 0; x < gfx_current_dimensions.width; x++) {
-            uint64_t i = (y * gfx_current_dimensions.width + x) * 4;
-            uint64_t j = ((gfx_current_dimensions.height - y - 1) * gfx_current_dimensions.width + x) * 4;
-            int r = 0, g = 0, b = 0, a = 0;
-            r = image[i + 0];
-            g = image[i + 1];
-            b = image[i + 2];
-            a = image[i + 3];
-            flipped_image[j + 0] = r;
-            flipped_image[j + 1] = g;
-            flipped_image[j + 2] = b;
-            flipped_image[j + 3] = a;
+    glGenTextures(1, &resolve_texture_id);
+    glBindTexture(GL_TEXTURE_2D, resolve_texture_id);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, gfx_current_dimensions.width, gfx_current_dimensions.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, resolve_texture_id, 0);
+
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+        //fprintf(stderr, "Failed to create resolve framebuffer\n");
+        return;
+    }
+
+    // Bind the multisample framebuffer for reading and the single-sample framebuffer for drawing
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, (GLuint)(intptr_t)buffer);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, resolve_framebuffer_id);
+
+    // Use glBlitFramebuffer to copy the content
+    glBlitFramebuffer(0, 0, gfx_current_dimensions.width, gfx_current_dimensions.height, 0, 0, gfx_current_dimensions.width, gfx_current_dimensions.height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+
+    // Bind the single-sample framebuffer for reading
+    glBindFramebuffer(GL_FRAMEBUFFER, resolve_framebuffer_id);
+
+    // Allocate memory for the pixel data
+    int width = gfx_current_dimensions.width;
+    int height = gfx_current_dimensions.height;
+    unsigned char* pixels = (unsigned char*)malloc(4 * width * height);
+
+    // Read the pixel data from the single-sample framebuffer
+    glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+
+    // Flip the image vertically
+    for (int y = 0; y < height / 2; ++y) {
+        for (int x = 0; x < width; ++x) {
+            int top_index = (y * width + x) * 4;
+            int bottom_index = ((height - 1 - y) * width + x) * 4;
+            for (int i = 0; i < 4; ++i) {
+                unsigned char temp = pixels[top_index + i];
+                pixels[top_index + i] = pixels[bottom_index + i];
+                pixels[bottom_index + i] = temp;
+            }
         }
     }
 
 #ifdef __MINGW32__
     BITMAPV5HEADER header = {
         .bV5Size = sizeof(header),
-        .bV5Width = gfx_current_dimensions.width,
-        .bV5Height = gfx_current_dimensions.height, // could be negative to vflip, but some applications do not like it
+        .bV5Width = width,
+        .bV5Height = height, // could be negative to vflip, but some applications do not like it
         .bV5Planes = 1,
         .bV5BitCount = 32,
         .bV5Compression = BI_BITFIELDS,
@@ -280,14 +306,14 @@ void imgui_capture_screenshot(void* buffer) {
         .bV5CSType = LCS_WINDOWS_COLOR_SPACE, // required for alpha support
     };
 
-    HGLOBAL global = GlobalAlloc(GMEM_MOVEABLE, sizeof(header) + gfx_current_dimensions.width*gfx_current_dimensions.height*4);
+    HGLOBAL global = GlobalAlloc(GMEM_MOVEABLE, sizeof(header) + width * height * 4);
     if (global) {
         BYTE* buffer = (BYTE*)GlobalLock(global);
         if (buffer) {
             CopyMemory(buffer, &header, sizeof(header));
             // vflip the bitmap manually, for better compatibility
-            for (int i=0; i<gfx_current_dimensions.height; i++) {
-                CopyMemory(buffer + sizeof(header) + i*gfx_current_dimensions.width*4, flipped_image + (gfx_current_dimensions.height-1-i)*gfx_current_dimensions.width*4, gfx_current_dimensions.width*4);
+            for (int i = 0; i < height; i++) {
+                CopyMemory(buffer + sizeof(header) + i * width * 4, pixels + (height - 1 - i) * width * 4, width * 4);
             }
             GlobalUnlock(global);
         }
@@ -298,10 +324,18 @@ void imgui_capture_screenshot(void* buffer) {
         }
     }
 #else
-    stbi_write_png("screenshot.png", (int)gfx_current_dimensions.width, (int)gfx_current_dimensions.height, 4, flipped_image, 0);
+    stbi_write_png("screenshot.png", width, height, 4, pixels, width * 4);
 #endif
-    free(image);
-    free(flipped_image);
+
+    // Free the allocated memory
+    free(pixels);
+
+    // Unbind the framebuffer
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    // Clean up
+    glDeleteFramebuffers(1, &resolve_framebuffer_id);
+    glDeleteTextures(1, &resolve_texture_id);
 
     skybox_has_deinit = false;
     capture_screenshot = false;
