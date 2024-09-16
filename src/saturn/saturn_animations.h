@@ -29,6 +29,7 @@ class PlutoAnim {
 
 extern PlutoAnim LoadPAnim(std::string filePath);
 extern std::vector<PlutoAnim> GetPAnimList(std::string folderPath);
+extern PlutoAnim ConvertFromVanilla();
 extern void saturn_play_pluto_animation();
 extern bool saturn_check_for_chainer();
 

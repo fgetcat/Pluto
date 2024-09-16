@@ -238,6 +238,7 @@ const char* saturn_animations[] = {
     "TRIPLE_JUMP_FLY"
 };
 
+PlutoAnim current_pluto_anim;
 std::vector<PlutoAnim> pluto_animations_list;
 bool is_editing_panim;
 Vec3f bone_rotations[21];
@@ -313,6 +314,21 @@ std::vector<PlutoAnim> GetPAnimList(std::string folderPath) {
     return panim_list;
 }
 
+PlutoAnim ConvertFromVanilla() {
+    PlutoAnim plutoAnim;
+    struct Animation* vanillaAnim = gMarioStates[0].marioObj->header.gfx.animInfo.curAnim;
+
+    plutoAnim.Name = saturn_animations[selected_anim_index];
+    plutoAnim.Author = "Super Mario 64";
+    plutoAnim.Length = vanillaAnim->loopEnd - vanillaAnim->loopStart;
+    plutoAnim.Looping = (vanillaAnim->flags & ANIM_FLAG_NOLOOP) == 0;
+    plutoAnim.Values = std::vector<s16>(vanillaAnim->values, vanillaAnim->values + vanillaAnim->length);
+    plutoAnim.Indices = std::vector<u16>(vanillaAnim->index, vanillaAnim->index + vanillaAnim->length);
+    plutoAnim.BoneCount = 20;
+
+    return plutoAnim;
+}
+
 s16 bone_anim_values[63];
 u16 bone_anim_indices[126] = {
     0x0001, 0x0000, 0x0001, 0x0001, 0x0001, 0x0002,
@@ -338,11 +354,9 @@ u16 bone_anim_indices[126] = {
     0x0001, 0x003C, 0x0001, 0x003D, 0x0001, 0x003E,
 };
 
-PlutoAnim current_pluto_anim;
-
 /* Overwrites the currently played animation with the actively selected PlutoAnim */
 void saturn_play_pluto_animation() {
-    if (override_anim && freeze_camera && enable_custom_anim &&
+    if (override_anim && freeze_camera &&
         current_pluto_anim.Values.size() > 0 && current_pluto_anim.Indices.size() > 0) {
             // Pose Editor
             if (!is_editing_panim) {

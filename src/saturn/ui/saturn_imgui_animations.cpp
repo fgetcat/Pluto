@@ -35,30 +35,37 @@ static char animSearchTerm[128];
 void BoneEditorWindow() {
     if (current_pluto_anim.Values.size() > 0 && pause_anim && is_editing_panim && override_anim) {
         ImGui::Begin("Animation Pose Editor", &is_editing_panim, ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::PushItemWidth(150);
         int currbone = 0;
-#define BONE_ENTRY(name) ImGui::DragFloat3(name, bone_rotations[currbone++]);
+#define BONE_ENTRY(name) ImGui::DragFloat3(name, bone_rotations[currbone++], 1.0f, 0.0f, 0.0f, "%.0f", ImGuiSliderFlags_AlwaysClamp);
         BONE_ENTRY("Translation"    );
         BONE_ENTRY("Root"           );
+        ImGui::Separator();
         BONE_ENTRY("Body"           );
         BONE_ENTRY("Torso"          );
         BONE_ENTRY("Head"           );
+        ImGui::Separator();
         BONE_ENTRY("Left Arm"       );
         BONE_ENTRY("Upper Left Arm" );
         BONE_ENTRY("Lower Left Arm" );
         BONE_ENTRY("Left Hand"      );
+        ImGui::Separator();
         BONE_ENTRY("Right Arm"      );
         BONE_ENTRY("Upper Right Arm");
         BONE_ENTRY("Lower Right Arm");
         BONE_ENTRY("Right Hand"     );
+        ImGui::Separator();
         BONE_ENTRY("Left Leg"       );
         BONE_ENTRY("Upper Left Leg" );
         BONE_ENTRY("Lower Left Leg" );
         BONE_ENTRY("Left Foot"      );
+        ImGui::Separator();
         BONE_ENTRY("Right Leg"      );
         BONE_ENTRY("Upper Right Leg");
         BONE_ENTRY("Lower Right Leg");
         BONE_ENTRY("Right Foot"     );
 #undef BONE_ENTRY
+        ImGui::PopItemWidth();
         ImGui::End();
     }
 }
@@ -66,7 +73,12 @@ void BoneEditorWindow() {
 void OpenAnimationsMenu() {
     if (ImGui::BeginTabBar("###animation_tab_bar")) {
         // Vanilla Animations
-        if (ImGui::BeginTabItem("Vanilla")) {
+        ImGui::BeginDisabled(is_editing_panim);
+        bool vanillaMenuOpen = ImGui::BeginTabItem("Vanilla");
+        ImGui::EndDisabled();
+
+        if (vanillaMenuOpen) {
+            ImGui::BeginDisabled(is_editing_panim);
             ImGui::SetNextItemWidth(208);
             if (ImGui::BeginCombo("###v_anim_combo", saturn_animations[selected_anim_index], ImGuiComboFlags_None)) {
                 ImGui::InputTextWithHint("###anim_search", "Search...", animSearchTerm, IM_ARRAYSIZE(animSearchTerm), ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_CharsUppercase);
@@ -87,14 +99,14 @@ void OpenAnimationsMenu() {
                 }
                 ImGui::EndCombo();
             }
+            ImGui::EndDisabled();
             ImGui::EndTabItem();
         }
-        if (ImGui::IsItemClicked()) {
+        if (ImGui::IsItemClicked())
             force_set_character_animation(&gMarioStates[0], CHAR_ANIM_FIRST_PERSON);
-        }
 
         // Pluto Animations
-        ImGui::BeginDisabled(pluto_animations_list.size() <= 0);
+        ImGui::BeginDisabled(pluto_animations_list.size() <= 0 || is_editing_panim);
         enable_custom_anim = ImGui::BeginTabItem("PAnim");
         ImGui::EndDisabled();
         // Refresh the list every time the tab opens
@@ -103,12 +115,7 @@ void OpenAnimationsMenu() {
 
         if (pluto_animations_list.size() > 0) {
             if (enable_custom_anim) {
-                // On first run, initialize a PAnim
-                if (current_pluto_anim.Length == -1) {
-                    current_pluto_anim = LoadPAnim(pluto_animations_list[0].FilePath);
-                    loop_anim = current_pluto_anim.Looping;
-                }
-
+                ImGui::BeginDisabled(is_editing_panim);
                 ImGui::BeginChild("###p_anim_select", ImVec2(208, 150), ImGuiChildFlags_Border);
                 ImGui::SetNextItemWidth(208);
                 ImGui::InputTextWithHint("###anim_search", "Search...", animSearchTerm, IM_ARRAYSIZE(animSearchTerm), ImGuiInputTextFlags_AutoSelectAll);
@@ -131,6 +138,7 @@ void OpenAnimationsMenu() {
                     if (is_selected) ImGui::SetItemDefaultFocus();
                 }
                 ImGui::EndChild();
+                ImGui::EndDisabled();
 
                 // Metadata
                 ImGui::BeginChild("###p_metadata", ImVec2(208, 48), ImGuiChildFlags_Border);
@@ -150,10 +158,16 @@ void OpenAnimationsMenu() {
         }
         ImGui::EndTabBar();
     }
+    if (ImGui::IsItemClicked()) {
+        selected_panim_index = 0;
+        current_pluto_anim = LoadPAnim(pluto_animations_list[0].FilePath);
+        loop_anim = current_pluto_anim.Looping;
+    }
 
     if (ImGui::Checkbox("Override Animation", &override_anim)) {
-        if (!override_anim) set_character_animation(&gMarioStates[0], CHAR_ANIM_START_CROUCHING);
         is_editing_panim = false;
+        pause_anim = false;
+        if (!override_anim) set_character_animation(&gMarioStates[0], CHAR_ANIM_START_CROUCHING);
     }
     ImGui::Separator();
     ImGui::BeginDisabled(is_editing_panim && enable_custom_anim);
@@ -173,9 +187,14 @@ void OpenAnimationsMenu() {
     ImGui::EndDisabled();
 
     // Pose Editor
-    if (enable_custom_anim) {
-        ImGui::BeginDisabled(current_pluto_anim.Values.size() <= 0 || !pause_anim && override_anim);
-        if (ImGui::Button("Edit Pose")) is_editing_panim = !is_editing_panim;
-        ImGui::EndDisabled();
+    ImGui::BeginDisabled(!pause_anim && override_anim || !override_anim);
+    if (ImGui::Button("Edit Pose")) {
+        if (!enable_custom_anim && !is_editing_panim) {
+            current_pluto_anim = ConvertFromVanilla();
+            saturn_play_pluto_animation();
+        }
+        is_editing_panim = !is_editing_panim;
+        if (!is_editing_panim && !enable_custom_anim) override_anim = false;
     }
+    ImGui::EndDisabled();
 }

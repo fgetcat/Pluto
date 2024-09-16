@@ -40,12 +40,13 @@ static s32 RetrieveCurrentAnimationIndex(struct Object *aObject) {
 }
 
 extern void saturn_play_pluto_animation();
+extern bool is_editing_panim;
 
 // Must be called twice, before and after geo_set_animation_globals
 void DynOS_Anim_Swap(void *aPtr) {
     if (!aPtr) { return; }
 
-    if (override_anim && enable_custom_anim) {
+    if (override_anim && (enable_custom_anim || is_editing_panim)) {
         saturn_play_pluto_animation();
         return;
     }
