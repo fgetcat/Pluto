@@ -194,6 +194,8 @@ void OpenModelCCSelector(PackData* pack, std::vector<std::string> cc_list) {
             current_color_code = LoadGSFile(cc_list[n], pack->mPath + "/colorcodes");
             PasteGameShark(current_color_code.GameShark, false);
             UpdateEditorFromPalette();
+            UpdatePaletteFromEditor(0);
+            send_palette_to_network();
         }
         if (ImGui::BeginPopupContextItem()) {
             if (label_name != "../default") {

@@ -338,6 +338,8 @@ void OpenCCSelector() {
             current_color_code = LoadGSFile(color_code_list[n], "dynos/colorcodes");
             PasteGameShark(current_color_code.GameShark, false);
             UpdateEditorFromPalette();
+            UpdatePaletteFromEditor(0);
+            send_palette_to_network();
         }
         if (ImGui::BeginPopupContextItem()) {
             if (label_name != "Mario") {
