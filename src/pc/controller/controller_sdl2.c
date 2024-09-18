@@ -169,6 +169,7 @@ static inline void update_button(const int i, const bool new) {
     }
     if (unpressed) {
         djui_interactable_on_key_up(VK_BASE_SDL_GAMEPAD + i);
+        imgui_handle_binds(VK_BASE_SDL_GAMEPAD + i);
     }
 }
 

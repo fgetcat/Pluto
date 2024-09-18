@@ -101,13 +101,13 @@ unsigned int configKeyConsole[MAX_BINDS]    = { 0x0029,     0x0058,     VK_INVAL
 unsigned int configKeyPrevPage[MAX_BINDS]   = { 0x0016,     VK_INVALID, VK_INVALID };
 unsigned int configKeyNextPage[MAX_BINDS]   = { 0x0018,     VK_INVALID, VK_INVALID };
 unsigned int configKeyDisconnect[MAX_BINDS] = { VK_INVALID, VK_INVALID, VK_INVALID };
-unsigned int configKeyPlutoMenu[MAX_BINDS]          = { 0x003B, VK_INVALID, VK_INVALID };
+unsigned int configKeyPlutoMenu[MAX_BINDS]          = { 0x003B, 0x100c, VK_INVALID };
 unsigned int configKeyPlutoScreenshot[MAX_BINDS]    = { 0x003C, VK_INVALID, VK_INVALID };
 unsigned int configKeyPlutoChroma[MAX_BINDS]        = { 0x003D, VK_INVALID, VK_INVALID };
-unsigned int configKeyPlutoFreezeCamera[MAX_BINDS]  = { 0x0021, VK_INVALID, VK_INVALID };
+unsigned int configKeyPlutoFreezeCamera[MAX_BINDS]  = { 0x0021, 0x100b, VK_INVALID };
 unsigned int configKeyPlutoHud[MAX_BINDS]           = { 0x003E, VK_INVALID, VK_INVALID };
-unsigned int configKeyPlutoPlayAnim[MAX_BINDS]      = { 0x0018, VK_INVALID, VK_INVALID };
-unsigned int configKeyPlutoPauseAnim[MAX_BINDS]     = { 0x0019, VK_INVALID, VK_INVALID };
+unsigned int configKeyPlutoPlayAnim[MAX_BINDS]      = { 0x0018, 0x100d, VK_INVALID };
+unsigned int configKeyPlutoPauseAnim[MAX_BINDS]     = { 0x0019, 0x100e, VK_INVALID };
 unsigned int configStickDeadzone = 16; // 16*DEADZONE_STEP=4960 (the original default deadzone)
 unsigned int configRumbleStrength = 50;
 // better camera settings

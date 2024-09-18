@@ -80,7 +80,7 @@ void imgui_handle_events(SDL_Event* event) {
 
 void imgui_handle_binds(int scancode) {
     for (int i = 0; i < MAX_BINDS; i++) {
-        if (!gDjuiInMainMenu && !gDjuiChatBoxFocus && !gDjuiConsoleFocus && allow_game_input) {
+        if (!gDjuiInMainMenu && !gDjuiChatBoxFocus && !gDjuiConsoleFocus && allow_game_input && !gInteractableOverridePad) {
             if (scancode == (int)configKeyPlutoMenu[i])
                 show_menu = !show_menu;
             if (scancode == (int)configKeyPlutoScreenshot[i])
