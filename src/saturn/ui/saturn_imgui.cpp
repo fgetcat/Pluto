@@ -275,7 +275,7 @@ void imgui_capture_screenshot(void* buffer) {
             .bV5GreenMask = 0x0000ff00,
             .bV5BlueMask  = 0x00ff0000,
             .bV5AlphaMask = 0xff000000,
-            .bV5CSType = LCS_WINDOWS_COLOR_SPACE, // required for alpha support
+            .bV5CSType = *(DWORD*)"Win ", // required for alpha support
         };
 
         HGLOBAL global = GlobalAlloc(GMEM_MOVEABLE, sizeof(header) + width * height * 4);
