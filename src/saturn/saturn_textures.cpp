@@ -50,8 +50,8 @@ static u8 *RGBA32_RGBA16(const u8 *aData, u64 aLength) {
 uint32_t gTextureId = 0;
 
 /* Fetches a TexturePath's raw texture data in RGBA32 format */
-u8* GetTextureData(TexturePath Texture, int* Width, int* Height) {
-    if (Texture.RawData != 0) return Texture.RawData;
+u8* GetTextureData(TexturePath Texture, int* Width, int* Height, int Tile) {
+    //if (Texture.RawData != 0) return Texture.RawData;
     if (loading_texture_data) return 0;
     loading_texture_data = true;
 
@@ -80,7 +80,8 @@ u8* GetTextureData(TexturePath Texture, int* Width, int* Height) {
     /* RGBA-16 */ //RGBA32_RGBA16(TextureData->mRawData.begin(), TextureData->mRawData.Count());
 
     if (gTextureId == 0) gTextureId = gfx_get_current_rendering_api()->new_texture();
-    gfx_get_current_rendering_api()->select_texture(0, gTextureId);
+    gfx_get_current_rendering_api()->select_texture(Tile, gTextureId);
+    gfx_get_current_rendering_api()->set_sampler_parameters(Tile, false, 0, 0);
     gfx_get_current_rendering_api()->upload_texture(_Buffer, TextureData->mRawWidth, TextureData->mRawHeight);
 
     *Width = TextureData->mRawWidth;
@@ -204,15 +205,16 @@ int GetValidExpressionCount(std::vector<Expression> expressions_list) {
 }
 
 /* Loads a texture's raw data if it hasn't already */
-void InitTextureData(int exp_index, int tex_index) {
+void InitTextureData(int exp_index, int tex_index, int tile) {
     if (current_expressions[exp_index].Textures[tex_index].RawData == 0)
         current_expressions[exp_index].Textures[tex_index].RawData =    GetTextureData(current_expressions[exp_index].Textures[tex_index],
                                                                         &current_expressions[exp_index].Textures[tex_index].Width,
-                                                                        &current_expressions[exp_index].Textures[tex_index].Height);
+                                                                        &current_expressions[exp_index].Textures[tex_index].Height,
+                                                                        tile);
 }
 
 /* Handles texture replacement. Called from gfx_pc.c */
-const void* saturn_bind_texture(const void* input, uint32_t format, uint32_t size, Object* currentObj) {
+const void* saturn_bind_texture(const void* input, uint32_t format, uint32_t size, uint8_t tile, Object* currentObj) {
     if (input == nullptr || gDjuiInMainMenu) return input;
     const char* inputTexture = static_cast<const char*>(input);
     const char* outputTexture;
@@ -236,7 +238,12 @@ const void* saturn_bind_texture(const void* input, uint32_t format, uint32_t siz
 
                 // Load texture data if it hasn't been loaded yet
                 // This is to prevent the game from crashing when the texture is missing
-                InitTextureData(i, expression.CurrentIndex);
+                InitTextureData(i, expression.CurrentIndex, (int)tile);
+
+                saturn_update_texture_expression((const uint8_t*)expression.Textures[expression.CurrentIndex].RawData,
+                                                tile, size,
+                                                expression.Textures[expression.CurrentIndex].Width,
+                                                expression.Textures[expression.CurrentIndex].Height);
 
                 // Custom blink cycle
                 if (expression.Name == "eyes" && current_expressions.size() >= 3 &&
@@ -254,12 +261,12 @@ const void* saturn_bind_texture(const void* input, uint32_t format, uint32_t siz
                         case 4:
                         case 6:
                             // Eyes Half
-                            InitTextureData(i, expression.BlinkIndex[0]);
+                            InitTextureData(i, expression.BlinkIndex[0], (int)tile);
                             return expression.Textures[expression.BlinkIndex[0]].RawData;
                         case 1:
                         case 5:
                             // Eyes Closed
-                            InitTextureData(i, expression.BlinkIndex[1]);
+                            InitTextureData(i, expression.BlinkIndex[1], (int)tile);
                             return expression.Textures[expression.BlinkIndex[1]].RawData;
                     }
                 }

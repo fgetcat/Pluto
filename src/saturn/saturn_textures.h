@@ -24,8 +24,8 @@ public:
     }
     std::string FilePath;
     u8 *RawData = 0;
-    int Width;
-    int Height;
+    int Width = 32;
+    int Height = 32;
     bool IsModelTexture = false;
 };
 
@@ -85,7 +85,7 @@ public:
 
 extern bool format_warning_dismissed;
 
-extern u8* GetTextureData(TexturePath, int*, int*);
+extern u8* GetTextureData(TexturePath, int*, int*, int);
 
 extern Expression LoadEyesFolder();
 std::vector<TexturePath> LoadExpressionTextures(std::string, Expression);
@@ -97,7 +97,7 @@ extern std::vector<Expression> current_expressions;
 extern "C" {
 #endif    
     #include "include/types.h"
-    const void* saturn_bind_texture(const void*, uint32_t, uint32_t, struct Object*);
+    const void* saturn_bind_texture(const void*, uint32_t, uint32_t, uint8_t, struct Object*);
     void saturn_custom_blink(s16* switch_eyes, s16 blink_frame, s8 eye_state);
 #ifdef __cplusplus
 }

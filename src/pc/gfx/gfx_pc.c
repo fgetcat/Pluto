@@ -1444,9 +1444,28 @@ static void gfx_dp_set_scissor(UNUSED uint32_t mode, uint32_t ulx, uint32_t uly,
     rdp.viewport_or_scissor_changed = true;
 }
 
-static void gfx_dp_set_texture_image(UNUSED uint32_t format, uint32_t size, UNUSED uint32_t width, const void* addr) {
-    rdp.texture_to_load.addr = saturn_bind_texture(addr, format, size, gCurrentObject);
+void saturn_update_texture_expression(const uint8_t* addr, uint8_t tile, uint32_t size, int width, int height) {
     rdp.texture_to_load.siz = size;
+    rdp.texture_tile.siz = size;
+
+    uint32_t wordSizeShift = (size == G_IM_SIZ_32b) ? 2 : 1;
+    uint32_t lrs = (width * height) - 1;
+    uint32_t sizeBytes = (lrs + 1) << wordSizeShift;
+    gfx_update_loaded_texture(tile, sizeBytes, addr);
+    rdp.textures_changed[tile] = true;
+
+    uint32_t line = (((width * 2) + 7) >> 3);
+    rdp.texture_tile.line_size_bytes = line * 8;
+
+    rdp.texture_tile.uls = 0;
+    rdp.texture_tile.ult = 0;
+    rdp.texture_tile.lrs = (width - 1) << G_TEXTURE_IMAGE_FRAC;
+    rdp.texture_tile.lrt = (height - 1) << G_TEXTURE_IMAGE_FRAC;
+}
+
+static void gfx_dp_set_texture_image(UNUSED uint32_t format, uint32_t size, UNUSED uint32_t width, const void* addr) {
+    rdp.texture_to_load.siz = size;
+    rdp.texture_to_load.addr = saturn_bind_texture(addr, format, size, rdp.texture_to_load.tile_number, gCurrentObject);
 }
 
 static void gfx_dp_set_tile(uint8_t fmt, uint32_t siz, uint32_t line, uint32_t tmem, uint8_t tile, uint32_t palette, uint32_t cmt, UNUSED uint32_t maskt, UNUSED uint32_t shiftt, uint32_t cms, UNUSED uint32_t masks, UNUSED uint32_t shifts) {
