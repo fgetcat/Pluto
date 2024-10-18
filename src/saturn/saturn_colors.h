@@ -181,6 +181,8 @@ extern u16 gChromaKeyColor;
 extern bool chroma_show_objects;
 extern bool chroma_show_geo;
 extern bool chroma_affects_light;
+extern bool shade_lighting_enabled;
+extern float shade_lighting_dir[3];
 #ifdef __cplusplus
 }
 #endif

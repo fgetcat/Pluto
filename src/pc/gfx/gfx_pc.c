@@ -715,6 +715,12 @@ static void calculate_normal_dir(const Light_t *light, float coeffs[3], bool app
         light_dir[2] += gLightingDir[2];
     }
 
+    if (shade_lighting_enabled) {
+        light_dir[0] += shade_lighting_dir[0]*2;
+        light_dir[1] += shade_lighting_dir[1]*-2;
+        light_dir[2] += shade_lighting_dir[2]*-2;
+    }
+
     gfx_transposed_matrix_mul(coeffs, light_dir, rsp.modelview_matrix_stack[rsp.modelview_matrix_stack_size - 1]);
     gfx_normalize_vector(coeffs);
 }
@@ -1036,6 +1042,12 @@ static void OPTIMIZE_O3 gfx_sp_vertex(size_t n_vertices, size_t dest_index, cons
                 d->color.r = v->cn[0];
                 d->color.g = v->cn[1];
                 d->color.b = v->cn[2];
+            }
+
+            if (shade_lighting_enabled && shade_lighting_dir[2] >= 0.0f && ((auto_chroma && chroma_affects_light) || !auto_chroma)) {
+                d->color.r /= (shade_lighting_dir[2]+.5f)*2;
+                d->color.g /= (shade_lighting_dir[2]+.5f)*2;
+                d->color.b /= (shade_lighting_dir[2]+.5f)*2;
             }
         }
 

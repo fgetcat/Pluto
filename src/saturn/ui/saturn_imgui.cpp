@@ -108,6 +108,43 @@ void imgui_handle_binds(int scancode) {
     }
 }
 
+void JoystickSlider(float& _x, float& _y, float scale = 100.f, float b_scale = 15.f, int bg_color = IM_COL32(0, 0, 0, 155), int button_color = IM_COL32(215, 215, 215, 255), const int& mouse_button = 0u) {
+    namespace im = ImGui;
+    ImDrawList* draw_list = im::GetWindowDrawList();
+    const auto& p = im::GetCursorScreenPos();
+    static bool button_clicked = false;
+    const auto& mouse = im::GetIO().MousePos;
+    draw_list->AddCircleFilled(ImVec2(p.x + scale, p.y + scale), scale, bg_color, 50);
+    auto button_x = _x * (scale - b_scale) + p.x + scale;
+    auto button_y = _y * (scale - b_scale) + p.y + scale;
+    static float toward = 0.f;
+    im::ButtonBehavior(ImRect({ button_x - b_scale, button_y - b_scale}, { button_x + b_scale, button_y + b_scale }), im::GetCurrentWindow()->ID, nullptr, nullptr, 0);
+    
+    float distance_to_center = sqrtf(pow(mouse.x - (p.x + scale), 2) + pow(mouse.y - (p.y + scale), 2));
+    if (distance_to_center < scale - b_scale) {
+        if (sqrtf(pow(mouse.x - button_x, 2) + pow(mouse.y - button_y, 2)) < b_scale)
+            if (im::GetIO().MouseClicked[mouse_button])
+                button_clicked = true;
+        if (!im::GetIO().MouseDown[mouse_button])
+            button_clicked = false;
+        if (button_clicked) {
+            button_x = mouse.x;
+            button_y = mouse.y;
+        };
+        toward = -atan2(button_x - p.x - scale, button_y - p.y - scale);
+        if (sqrtf(pow(p.x - button_x + scale, 2) + pow(p.y - button_y + scale, 2)) > scale - b_scale) {
+            button_x = p.x + scale + cos(toward - 0.5f * 3.14f) * -(scale-b_scale);
+            button_y = p.y + scale + sin(toward - 0.5f * 3.14f) * -(scale-b_scale);
+        };
+        
+        _x = (button_x - p.x - scale) / (scale - b_scale);
+        _y = (button_y - p.y - scale) / (scale - b_scale);
+    }
+
+    draw_list->AddCircleFilled(ImVec2(button_x, button_y), b_scale, button_color, 25);
+    im::Dummy(ImVec2(scale*2, scale*2));
+};
+
 void imgui_update() {
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplSDL2_NewFrame(current_window);
@@ -159,7 +196,24 @@ void imgui_update() {
             if (ImGui::BeginMenu("World")) {
                 // Chroma Key (Auto-Chroma)
                 OpenAutoChromaMenu();
-                
+                ImGui::Checkbox("Lighting Direction", &shade_lighting_enabled);
+                if (shade_lighting_enabled) {
+                    ImGui::BeginChild("##lighting", ImVec2(175, 92), ImGuiChildFlags_Border);
+                    JoystickSlider(shade_lighting_dir[0], shade_lighting_dir[1], 35.f, 7.f);
+                    ImGui::SameLine();
+                    ImGui::VSliderFloat("##lighting_z", ImVec2(20, 35*2), &shade_lighting_dir[2], -1.f, 1.f, "");
+                    ImGui::SameLine();
+                    ImGui::BeginChild("##lighting_dir", ImVec2(69, 35*2+5), ImGuiChildFlags_None, ImGuiWindowFlags_None);
+                    ImGui::TextDisabled("X %.2f\nY %.2f\nZ %.2f", shade_lighting_dir[0], shade_lighting_dir[1], shade_lighting_dir[2]);
+                    if (ImGui::MenuItem("Reset")) {
+                        shade_lighting_dir[0] = 0.f;
+                        shade_lighting_dir[1] = 0.f;
+                        shade_lighting_dir[2] = 0.f;
+                    }
+                    ImGui::EndChild();
+                    ImGui::EndChild();
+                }
+
                 // Quick Options
                 ImGui::Checkbox("HUD", &enable_hud);
                 ImGui::Checkbox("Shadows", &enable_shadows);

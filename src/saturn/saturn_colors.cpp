@@ -45,6 +45,9 @@ bool chroma_show_objects;
 bool chroma_show_geo;
 bool chroma_affects_light = true;
 
+bool shade_lighting_enabled;
+float shade_lighting_dir[3] = {0.0f, 0.0f, 0.0f};
+
 /* Converts a color template into a hex string */
 std::string HexifyColorTemplate(ColorTemplate &colorBodyPart) {
     char colour[64];
