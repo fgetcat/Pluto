@@ -154,10 +154,8 @@ bool saturn_file_browser_create_imgui(FileBrowserEntry dir, std::string path, st
                 selected_path = fullpath;
                 clicked = true;
             }
-            if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(1)) {
+            if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(1))
                 current_expressions[exp_index].Textures = LoadExpressionTextures(current_expressions[exp_index].FolderPath, current_expressions[exp_index]);
-                clicked = true;
-            }
         }
     }
     return clicked;
