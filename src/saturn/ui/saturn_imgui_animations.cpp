@@ -95,8 +95,6 @@ void OpenAnimationsMenu() {
                         selected_anim_index = n;
                         if (override_anim && !pause_anim) gMarioStates[0].marioObj->header.gfx.animInfo.animFrame = 0;
                     }
-
-                    if (is_selected) ImGui::SetItemDefaultFocus();
                 }
                 ImGui::EndCombo();
             }
@@ -136,8 +134,6 @@ void OpenAnimationsMenu() {
                         mcomp_extra_bone = current_pluto_anim.BoneCount > 20 ? true : false;
                         if (override_anim && !pause_anim) gMarioStates[0].marioObj->header.gfx.animInfo.animFrame = 0;
                     }
-
-                    if (is_selected) ImGui::SetItemDefaultFocus();
                 }
                 ImGui::EndChild();
                 ImGui::EndDisabled();
