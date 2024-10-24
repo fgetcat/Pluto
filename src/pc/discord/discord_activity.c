@@ -14,6 +14,7 @@ struct DiscordActivity sCurActivity = { 0 };
 static int sQueuedLobby = 0;
 static uint64_t sQueuedLobbyId = 0;
 static char sQueuedLobbyPassword[64] = "";
+bool has_set_time;
 
 static void on_activity_update_callback(UNUSED void* data, enum EDiscordResult result) {
     LOG_INFO("> on_activity_update_callback returned %d", result);
@@ -93,8 +94,8 @@ static void discord_populate_details(char* buffer, int bufferLength) {
 void discord_activity_update(void) {
     sCurActivity.type = DiscordActivityType_Playing;
 
-    strncpy(sCurActivity.assets.large_image, "characters", 128);
-    strncpy(sCurActivity.assets.large_text, "sm64coopdx Characters", 128);
+    strncpy(sCurActivity.assets.large_image, "https://poly.dance/swag.gif", 128);
+    //strncpy(sCurActivity.assets.large_text, "sm64coopdx Characters", 128);
     strncpy(sCurActivity.assets.small_image, "icon", 128);
     strncpy(sCurActivity.assets.small_text, "sm64coopdx Icon", 128);
 
@@ -125,6 +126,11 @@ void discord_activity_update(void) {
 
     if (snprintf(sCurActivity.details, 128, "%s", details) < 0) {
         LOG_INFO("truncating details");
+    }
+
+    if (!has_set_time) {
+        sCurActivity.timestamps.start = (int64_t)time(0);
+        has_set_time = true;
     }
 
     if (!app.activities) {
