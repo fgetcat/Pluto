@@ -22,6 +22,10 @@
 #include "pc/djui/djui_console.h"
 #include "data/dynos.cpp.h"
 
+float marioScaleX = 1.0f;
+float marioScaleY = 1.0f;
+float marioScaleZ = 1.0f;
+
 char uiCcLabelName[128] = "Default";
 char uiGameShark[1024 * 16] =    "8107EC40 FF00\n8107EC42 0000\n8107EC38 7F00\n8107EC3A 0000\n"
                                         "8107EC28 0000\n8107EC2A FF00\n8107EC20 0000\n8107EC22 7F00\n"

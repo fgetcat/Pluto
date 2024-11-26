@@ -298,19 +298,34 @@ void OpenSwitchOptions() {
         face_angle = (float)gMarioStates[0].faceAngle[1] / 182.04;
     }
 
-    /*ImGui::SetNextItemWidth(150);
-    ImGui::SliderInt("###walkpoint", &walkpoint_speed, 0, 127, "Walkpoint %d");*/
+        ImGui::SameLine();
+        ImGuiKnobs::KnobInt("Walkpoint", &walkpoint_speed, 0, 127, 0, "%d", ImGuiKnobVariant_Tick, 0, ImGuiKnobFlags_DragHorizontal);
+        if (ImGui::IsItemHovered() && ImGui::IsMouseReleased(ImGuiMouseButton_Right))
+            ImGui::OpenPopup("###walkpointPresets");
+        if (ImGui::BeginPopup("###walkpointPresets")) {
+            if (ImGui::Selectable("Running")) walkpoint_speed = 127;
+            if (ImGui::Selectable("Walking")) walkpoint_speed = 36;
+            if (ImGui::Selectable("Tiptoe")) walkpoint_speed = 25;
+            ImGui::EndPopup();
+        }
 
-    ImGui::SameLine();
-    ImGuiKnobs::KnobInt("Walkpoint", &walkpoint_speed, 0, 127, 0, "%d", ImGuiKnobVariant_Tick, 0, ImGuiKnobFlags_DragHorizontal);
-    if (ImGui::IsItemHovered() && ImGui::IsMouseReleased(ImGuiMouseButton_Right))
-        ImGui::OpenPopup("###walkpointPresets");
-    if (ImGui::BeginPopup("###walkpointPresets")) {
-        if (ImGui::Selectable("Running")) walkpoint_speed = 127;
-        if (ImGui::Selectable("Walking")) walkpoint_speed = 36;
-        if (ImGui::Selectable("Tiptoe")) walkpoint_speed = 25;
-        ImGui::EndPopup();
+        ImGui::Separator();
+        if (ImGui::SliderFloat("###linked_scale", &marioScaleX, 0.f, 5.f, "Scale %.0f", ImGuiSliderFlags_NoRoundToFormat))
+            marioScaleY = marioScaleZ = marioScaleX;
+        if (ImGui::IsItemHovered() && ImGui::IsMouseReleased(ImGuiMouseButton_Right))
+            ImGui::OpenPopup("###scalePresets");
+        if (ImGui::BeginPopup("###scalePresets")) {
+            if (ImGui::MenuItem("Reset")) {
+                marioScaleX = marioScaleY = marioScaleZ = 1.f;
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::SliderFloat("###scale_x", &marioScaleX, 0.f, 5.f, "X %.3f", ImGuiSliderFlags_NoRoundToFormat);
+            ImGui::SliderFloat("###scale_y", &marioScaleY, 0.f, 5.f, "Y %.3f", ImGuiSliderFlags_NoRoundToFormat);
+            ImGui::SliderFloat("###scale_z", &marioScaleZ, 0.f, 5.f, "Z %.3f", ImGuiSliderFlags_NoRoundToFormat);
+            ImGui::EndPopup();
+        }
     }
+    ImGui::PopItemWidth();
 }
 
 void OpenModelSettings() {

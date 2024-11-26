@@ -45,6 +45,7 @@
 #include "bettercamera.h"
 #include "first_person_cam.h"
 #include "saturn/saturn.h"
+#include "saturn/saturn_models.h"
 
 #define MAX_HANG_PREVENTION 64
 
@@ -1476,7 +1477,7 @@ void squish_mario_model(struct MarioState *m) {
     // Also handles the Tiny Mario and Huge Mario cheats.
     u8 squishTimer = (m->squishTimer > m->bounceSquishTimer) ? m->squishTimer : m->bounceSquishTimer;
     if (squishTimer == 0) {
-        vec3f_set(m->marioObj->header.gfx.scale, 1.0f, 1.0f, 1.0f);
+        vec3f_set(m->marioObj->header.gfx.scale, marioScaleX, marioScaleY, marioScaleZ);
         return;
     }
 

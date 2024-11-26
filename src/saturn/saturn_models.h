@@ -44,6 +44,9 @@ extern bool IsAllRGBA32(std::vector<Expression>);
 
 extern "C" {
 #endif    
+    extern float marioScaleX;
+    extern float marioScaleY;
+    extern float marioScaleZ;
     extern void LoadModelData(int, bool, bool);
     extern void RefreshActiveExpressions();
 #ifdef __cplusplus
