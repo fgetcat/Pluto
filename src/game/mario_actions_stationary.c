@@ -492,7 +492,12 @@ s32 act_hold_idle(struct MarioState *m) {
     }
 
     stationary_ground_step(m);
-    set_character_animation(m, CHAR_ANIM_IDLE_WITH_LIGHT_OBJ);
+
+    if (freeze_camera && !enable_head_rotation)
+        saturn_action_idle(m);
+    else 
+        set_character_animation(m, CHAR_ANIM_IDLE_WITH_LIGHT_OBJ);
+
     return FALSE;
 }
 

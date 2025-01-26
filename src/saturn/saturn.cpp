@@ -141,7 +141,11 @@ int saturn_camera_update() {
 /* Custom Mario action, active when the player is idle and in machinima mode.
 To-do: Cycle animations via the mixtape */
 void saturn_action_idle(struct MarioState *m) {
-    if (!(enable_custom_anim && override_anim)) force_set_character_animation(m, (override_anim) ? selected_anim_index : CHAR_ANIM_FIRST_PERSON);
+    // Unholy idle animation decider
+    CharacterAnimID idle_anim = m->action & ACT_FLAG_SWIMMING ? CHAR_ANIM_WATER_IDLE : 
+    (m->heldObj == NULL) ? CHAR_ANIM_FIRST_PERSON : CHAR_ANIM_IDLE_WITH_LIGHT_OBJ;
+
+    if (!(enable_custom_anim && override_anim)) force_set_character_animation(m, (override_anim) ? selected_anim_index : idle_anim);
     if (m->marioObj == NULL) return;
 
     struct Animation *targetAnim = m->marioObj->header.gfx.animInfo.curAnim;
