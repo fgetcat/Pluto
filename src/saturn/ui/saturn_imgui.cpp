@@ -313,7 +313,7 @@ void imgui_hud() {
         vec3f_copy(pos, gMarioStates[0].marioObj->header.gfx.pos);
         if (djui_hud_world_pos_to_screen_pos(pos, out)) {
             float dist = vec3f_dist(gLakituState.pos, gMarioStates[0].pos);
-            float size = 6.f * 7000.f / dist;
+            float size = 7.f * 7000.f / dist;
 
             // Find a golden ratio for our resolution and N64 default (320x240)
             float scale_y = gfx_current_dimensions.height / 360.f;
@@ -323,6 +323,8 @@ void imgui_hud() {
             // Get the cursor position in N64 coordinates
             float cursor_x = djui_hud_get_mouse_x() * djui_gfx_get_scale() / scale_y;
             float cursor_y = djui_hud_get_mouse_y() * djui_gfx_get_scale() / scale_y;
+
+            out[1] += 4;
 
             // Calculate the box coordinates
             float box_top_left = (out[0] - size / 2) * 1.5f;
