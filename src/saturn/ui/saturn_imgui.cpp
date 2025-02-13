@@ -286,9 +286,11 @@ void imgui_capture_screenshot(void* buffer) {
                 CloseClipboard();
             }
         }
-#else
-        stbi_write_png("screenshot.png", gfx_current_dimensions.width, gfx_current_dimensions.height, 4, pixels, gfx_current_dimensions.width * 4);
 #endif
+        const char* path = sys_user_path();
+        std::filesystem::path new_path = std::filesystem::path(path) / "screenshot.png";
+        stbi_write_png(new_path.string().c_str(), gfx_current_dimensions.width, gfx_current_dimensions.height, 4, pixels, gfx_current_dimensions.width * 4);
+
         free(pixels);
     }
 
