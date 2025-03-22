@@ -336,8 +336,9 @@ void imgui_hud() {
             float box_bottom_right = (out[1]) * 1.5f;
 
             show_window_mario = (cursor_x >= box_top_left && cursor_y >= box_bottom_left && cursor_x <= box_top_right && cursor_y <= box_bottom_right);
-            djui_hud_set_color(255, 0, 0, 128);
-            djui_hud_render_rect(out[0] - size / 2.f, out[1] - size, size, size);
+            // Debug
+            /*djui_hud_set_color(255, 0, 0, 128);
+            djui_hud_render_rect(out[0] - size / 2.f, out[1] - size, size, size);*/
         }
     }
 }
