@@ -168,7 +168,7 @@ void OpenAnimationsMenu() {
         if (!override_anim) set_character_animation(&gMarioStates[0], CHAR_ANIM_START_CROUCHING);
     }
     ImGui::Separator();
-    ImGui::BeginDisabled(is_editing_panim && enable_custom_anim);
+    ImGui::BeginDisabled(is_editing_panim);
         ImGui::BeginDisabled(!override_anim);
             if (enable_custom_anim && override_anim) ImGui::TextWrapped("Now Playing: %s", current_pluto_anim.Name.c_str());
             else ImGui::TextWrapped("Now Playing: %s", saturn_animations[gMarioStates[0].marioObj->header.gfx.animInfo.animID]);

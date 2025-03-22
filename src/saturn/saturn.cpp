@@ -72,7 +72,7 @@ int saturn_camera_update() {
         if (gDjuiInMainMenu || gDjuiChatBoxFocus || gDjuiConsoleFocus || !allow_game_input) return CAM_FROZEN;
 
         if (!SDL_GetKeyboardState(NULL)[SDL_SCANCODE_R]) {
-            // Rotation
+            // Movement
             if (SDL_GetKeyboardState(NULL)[SDL_SCANCODE_Y]) {
                 gCamera->pos[0] += sins(gCamera->yaw + atan2s(-127, 0)) * 12 * freeze_camera_speed;
                 gCamera->pos[2] += coss(gCamera->yaw + atan2s(-127, 0)) * 12 * freeze_camera_speed;
@@ -96,7 +96,7 @@ int saturn_camera_update() {
                 gCamera->focus[2] += coss(gCamera->yaw + atan2s(0, 127)) * 12 * freeze_camera_speed;
             }
         } else {
-            // Movement
+            // Rotation
             f32 dist;
             s16 pitch, yaw;
             vec3f_get_dist_and_angle(gCamera->pos, gCamera->focus, &dist, &pitch, &yaw);
