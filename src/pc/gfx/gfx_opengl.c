@@ -714,7 +714,7 @@ GLuint rendertexture_id;
 static void gfx_opengl_start_frame(void) {
     frame_count++;
 
-    if (configWindow.msaa == 2) {
+    if (configWindow.msaa == 4) {
         glEnable(GL_MULTISAMPLE);
     } else {
         glDisable(GL_MULTISAMPLE);
@@ -729,17 +729,17 @@ static void gfx_opengl_start_frame(void) {
         glGenFramebuffers(1, &framebuffer_id);
         glBindFramebuffer(GL_FRAMEBUFFER, framebuffer_id);
 
-        if (configWindow.msaa == 2) {
+        if (configWindow.msaa == 4) {
             // Generate and bind multisample texture
             glGenTextures(1, &rendertexture_id);
             glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, rendertexture_id);
-            glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, configWindow.msaa, GL_RGBA, gfx_current_dimensions.width, gfx_current_dimensions.height, GL_TRUE);
+            glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4, GL_RGBA, gfx_current_dimensions.width, gfx_current_dimensions.height, GL_TRUE);
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, rendertexture_id, 0);
 
             // Generate and bind multisample renderbuffer for depth
             glGenRenderbuffers(1, &depthbuffer_id);
             glBindRenderbuffer(GL_RENDERBUFFER, depthbuffer_id);
-            glRenderbufferStorageMultisample(GL_RENDERBUFFER, configWindow.msaa, GL_DEPTH_COMPONENT, gfx_current_dimensions.width, gfx_current_dimensions.height);
+            glRenderbufferStorageMultisample(GL_RENDERBUFFER, 4, GL_DEPTH_COMPONENT, gfx_current_dimensions.width, gfx_current_dimensions.height);
             glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthbuffer_id);
         } else {
             // Generate and bind regular texture
