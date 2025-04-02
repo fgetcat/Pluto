@@ -141,6 +141,7 @@ static struct RDP {
         const uint8_t *addr;
         uint8_t siz;
         uint8_t tile_number;
+        uint8_t is_expression;
     } texture_to_load;
     struct {
         const uint8_t *addr;
@@ -210,6 +211,7 @@ static bool sOnlyTextureChangeOnAddrChange = false;
 
 static void gfx_update_loaded_texture(uint8_t tile_number, uint32_t size_bytes, const uint8_t* addr) {
     if (tile_number >= RDP_TILES) { return; }
+    if (rdp.texture_to_load.is_expression == 1) return;
     if (!sOnlyTextureChangeOnAddrChange) {
         rdp.textures_changed[tile_number] = true;
     } else if (!rdp.textures_changed[tile_number]) {
@@ -1457,38 +1459,35 @@ static void gfx_dp_set_scissor(UNUSED uint32_t mode, uint32_t ulx, uint32_t uly,
 }
 
 void saturn_update_texture_expression(const uint8_t* addr, uint8_t tile, uint32_t size, int width, int height) {
+    rdp.texture_to_load.is_expression = 1;
+
+    rdp.loaded_texture[tile].addr = addr;
     rdp.texture_to_load.siz = size;
     rdp.texture_tile.siz = size;
 
     uint32_t wordSizeShift = (size == G_IM_SIZ_32b) ? 2 : 1;
     uint32_t lrs = (width * height) - 1;
     uint32_t sizeBytes = (lrs + 1) << wordSizeShift;
-    gfx_update_loaded_texture(tile, sizeBytes, addr);
-    rdp.textures_changed[tile] = true;
+    rdp.loaded_texture[tile].size_bytes = sizeBytes;
 
     uint32_t line = (((width * 2) + 7) >> 3);
     rdp.texture_tile.line_size_bytes = line * 8;
-
-    rdp.texture_tile.uls = 0;
-    rdp.texture_tile.ult = 0;
-    rdp.texture_tile.lrs = (width - 1) << G_TEXTURE_IMAGE_FRAC;
-    rdp.texture_tile.lrt = (height - 1) << G_TEXTURE_IMAGE_FRAC;
 }
 
 static void gfx_dp_set_texture_image(UNUSED uint32_t format, uint32_t size, UNUSED uint32_t width, const void* addr) {
+    rdp.texture_to_load.is_expression = 0;
     rdp.texture_to_load.siz = size;
-    rdp.texture_to_load.addr = saturn_bind_texture(addr, format, size, rdp.texture_to_load.tile_number, gCurrentObject);
+    rdp.texture_to_load.addr = saturn_bind_texture(addr, format, size, rdp.texture_to_load.tile_number, &rdp.texture_to_load.is_expression, gCurrentObject);
 }
 
 static void gfx_dp_set_tile(uint8_t fmt, uint32_t siz, uint32_t line, uint32_t tmem, uint8_t tile, uint32_t palette, uint32_t cmt, UNUSED uint32_t maskt, UNUSED uint32_t shiftt, uint32_t cms, UNUSED uint32_t masks, UNUSED uint32_t shifts) {
-
     if (tile == G_TX_RENDERTILE) {
         SUPPORT_CHECK(palette == 0); // palette should set upper 4 bits of color index in 4b mode
         rdp.texture_tile.fmt = fmt;
         rdp.texture_tile.siz = siz;
         rdp.texture_tile.cms = cms;
         rdp.texture_tile.cmt = cmt;
-        rdp.texture_tile.line_size_bytes = line * 8;
+        if (rdp.texture_to_load.is_expression == 0) rdp.texture_tile.line_size_bytes = line * 8;
         if (!sOnlyTextureChangeOnAddrChange) {
             // I don't know if we ever need to set these...
             rdp.textures_changed[0] = true;
@@ -1568,10 +1567,12 @@ static void gfx_dp_load_tile(UNUSED uint8_t tile, uint32_t uls, uint32_t ult, ui
 
     uint32_t size_bytes = (((lrs >> G_TEXTURE_IMAGE_FRAC) + 1) * ((lrt >> G_TEXTURE_IMAGE_FRAC) + 1)) << word_size_shift;
     gfx_update_loaded_texture(rdp.texture_to_load.tile_number, size_bytes, rdp.texture_to_load.addr);
-    rdp.texture_tile.uls = uls;
-    rdp.texture_tile.ult = ult;
-    rdp.texture_tile.lrs = lrs;
-    rdp.texture_tile.lrt = lrt;
+    if (rdp.texture_to_load.is_expression == 0) {
+        rdp.texture_tile.uls = uls;
+        rdp.texture_tile.ult = ult;
+        rdp.texture_tile.lrs = lrs;
+        rdp.texture_tile.lrt = lrt;
+    }
 }
 
 static void gfx_dp_set_combine_mode(uint32_t rgb1, uint32_t alpha1, uint32_t rgb2, uint32_t alpha2) {

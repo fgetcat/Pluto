@@ -97,7 +97,7 @@ extern std::vector<Expression> current_expressions;
 extern "C" {
 #endif    
     #include "include/types.h"
-    const void* saturn_bind_texture(const void*, uint32_t, uint32_t, uint8_t, struct Object*);
+    const void* saturn_bind_texture(const void*, uint32_t, uint32_t, uint8_t, uint8_t*, struct Object*);
     void saturn_custom_blink(s16* switch_eyes, s16 blink_frame, s8 eye_state);
 #ifdef __cplusplus
 }

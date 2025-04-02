@@ -214,7 +214,7 @@ void InitTextureData(int exp_index, int tex_index, int tile) {
 }
 
 /* Handles texture replacement. Called from gfx_pc.c */
-const void* saturn_bind_texture(const void* input, uint32_t format, uint32_t size, uint8_t tile, Object* currentObj) {
+const void* saturn_bind_texture(const void* input, uint32_t format, uint32_t size, uint8_t tile, uint8_t* is_expression, Object* currentObj) {
     if (input == nullptr || gDjuiInMainMenu) return input;
     const char* inputTexture = static_cast<const char*>(input);
     const char* outputTexture;
@@ -240,6 +240,7 @@ const void* saturn_bind_texture(const void* input, uint32_t format, uint32_t siz
                 // This is to prevent the game from crashing when the texture is missing
                 InitTextureData(i, expression.CurrentIndex, (int)tile);
 
+                *is_expression = 1;
                 saturn_update_texture_expression((const uint8_t*)expression.Textures[expression.CurrentIndex].RawData,
                                                 tile, size,
                                                 expression.Textures[expression.CurrentIndex].Width,
