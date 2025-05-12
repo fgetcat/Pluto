@@ -1303,7 +1303,7 @@ bool node_is_any_player(struct Object *node) {
             return true;
         }
     }
-    return false;
+    return node == find_hat_object();
 }
 
 /**

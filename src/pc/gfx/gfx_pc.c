@@ -829,7 +829,7 @@ static void OPTIMIZE_O3 gfx_sp_vertex(size_t n_vertices, size_t dest_index, cons
             int networkIndex = -1;
             for (s32 i = 0; i < MAX_PLAYERS; i++) {
                 if (gMarioStates[i].marioObj != gCurrentObject &&
-                (find_hat_object() != NULL && gCurrentObject == find_hat_object())) { continue; }
+                (find_hat_object() != NULL && gCurrentObject != find_hat_object())) { continue; }
                     networkIndex = gNetworkPlayers[i].localIndex;
             }
 
