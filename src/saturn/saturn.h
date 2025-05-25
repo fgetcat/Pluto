@@ -23,6 +23,7 @@ extern "C" {
     extern bool enable_shadows;
     extern bool enable_torso_rotation;
     extern bool enable_head_rotation;
+    extern int head_rotation[2];
     extern bool enable_model_particles;
     extern float face_angle;
     

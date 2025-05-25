@@ -2705,6 +2705,8 @@ s32 exit_c_up(struct Camera *c) {
                     // Make Mario look forward
                     sMarioCamState->headRotation[0] = 0;
                     sMarioCamState->headRotation[1] = 0;
+                    head_rotation[0] = 0;
+                    head_rotation[1] = 0;
                 }
 
                 // Finished exiting C-Up
@@ -2794,6 +2796,8 @@ void move_into_c_up(struct Camera *c) {
 
     sMarioCamState->headRotation[0] = 0;
     sMarioCamState->headRotation[1] = 0;
+    head_rotation[0] = 0;
+    head_rotation[1] = 0;
 
     // Finished zooming in
     if (++sModeInfo.frame == sModeInfo.max) {
@@ -2841,6 +2845,8 @@ s32 mode_c_up_camera(struct Camera *c) {
             // Make Mario look forward
             camera_approach_s16_symmetric_bool(&sMarioCamState->headRotation[0], 0, 1024);
             camera_approach_s16_symmetric_bool(&sMarioCamState->headRotation[1], 0, 1024);
+            camera_approach_s16_symmetric_bool((s16*)&head_rotation[0], 0, 1024);
+            camera_approach_s16_symmetric_bool((s16*)&head_rotation[1], 0, 1024);
         } else {
             // Finished exiting C-Up
             gCameraMovementFlags &= ~(CAM_MOVE_STARTED_EXITING_C_UP | CAM_MOVE_C_UP_MODE);
@@ -3259,9 +3265,16 @@ void update_camera(struct Camera *c) {
                 }
                 if (gPlayer1Controller->buttonPressed & D_CBUTTONS || gPlayer1Controller->buttonPressed & B_BUTTON) {
                     exit_c_up(c);
+                    if ((gPlayer1Controller->buttonDown & R_TRIG) == 0) {
+                        sCUpCameraPitch = 0;
+                        sModeOffsetYaw = 0;
+                    }
                 }
-                if (c->mode == CAMERA_MODE_C_UP) {
-                    move_mario_head_c_up(c);
+                if (gMarioStates[0].action == ACT_FIRST_PERSON) {
+                    sCUpCameraPitch += (s16)(gPlayer1Controller->stickY * 10.f);
+                    sModeOffsetYaw -= (s16)(gPlayer1Controller->stickX * 10.f);
+                    head_rotation[0] = sCUpCameraPitch * 3 / 4;
+                    head_rotation[1] = sModeOffsetYaw * 3 / 4;
                 }
 
                 // Reset forward movement vector
@@ -3473,6 +3486,8 @@ void reset_camera(struct Camera *c) {
         vec3f_copy(sModeTransition.marioPos, sMarioCamState->pos);
         sMarioCamState->headRotation[0] = 0;
         sMarioCamState->headRotation[1] = 0;
+        head_rotation[0] = 0;
+        head_rotation[1] = 0;
         sMarioCamState->cameraEvent = 0;
         sMarioCamState->usedObj = NULL;
     }
