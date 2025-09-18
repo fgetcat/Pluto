@@ -280,6 +280,39 @@ void OpenModelCCSelector(PackData* pack, std::vector<std::string> cc_list) {
     }
 }
 
+void SwitchOption(const char* label, int* state, const char* array[], int size) {
+    const char* preview_label = (*state >= size) ? "Custom" : array[*state];
+    if (ImGui::BeginCombo(label, preview_label)) {
+        for (int i = 0; i < size; i++) {
+            bool is_selected = (*state == i);
+            if (ImGui::Selectable(array[i], is_selected)) {
+                *state = i;
+                if (array == powerup_switches) vanish_transparency = 128; // Reset transparency when powerup changes
+            }
+            if (is_selected) ImGui::SetItemDefaultFocus();
+        }
+        ImGui::EndCombo();
+    }
+    if (ImGui::IsItemHovered()) {
+        ImGui::BeginTooltip();
+        ImGui::TextDisabled("Right click for more options");
+        ImGui::EndTooltip();
+        if (ImGui::IsMouseReleased(ImGuiMouseButton_Right))
+            ImGui::OpenPopup((std::string(label) + "Extended").c_str());
+    }
+    if (ImGui::BeginPopup((std::string(label) + "Extended").c_str())) {
+        ImGui::PushItemWidth(100);
+        if (ImGui::InputInt("###switch_state", state, 1, 10, ImGuiInputTextFlags_None))
+            if (array == powerup_switches) vanish_transparency = 128; // Reset transparency when powerup changes
+        if (ImGui::Selectable("Reset")) {
+            *state = 0;
+            if (array == powerup_switches) vanish_transparency = 128; // Reset transparency when powerup changes
+        }
+        ImGui::PopItemWidth();
+        ImGui::EndPopup();
+    }
+}
+
 void OpenSwitchOptions() {
     ImGui::PushItemWidth(150);
     if (ImGui::MenuItem("Reset###reset_switches")) {
@@ -294,10 +327,10 @@ void OpenSwitchOptions() {
     }
     ImGui::Separator();
 
-    ImGui::Combo("Eyes###eye_state", &switch_state_eyes, eye_switches, IM_ARRAYSIZE(eye_switches));
-    ImGui::Combo("Right Hand###right_hand_state", &switch_state_hand_right, right_hand_switches, IM_ARRAYSIZE(right_hand_switches));
-    ImGui::Combo("Left Hand###left_hand_state", &switch_state_hand_left, left_hand_switches, IM_ARRAYSIZE(left_hand_switches));
-    ImGui::Combo("Cap###cap_state", &switch_state_cap, cap_switches, IM_ARRAYSIZE(cap_switches));
+    SwitchOption("Eyes###eye_state", &switch_state_eyes, eye_switches, IM_ARRAYSIZE(eye_switches));
+    SwitchOption("Right Hand###right_hand_state", &switch_state_hand_right, right_hand_switches, IM_ARRAYSIZE(right_hand_switches));
+    SwitchOption("Left Hand###left_hand_state", &switch_state_hand_left, left_hand_switches, IM_ARRAYSIZE(left_hand_switches));
+    SwitchOption("Cap###cap_state", &switch_state_cap, cap_switches, IM_ARRAYSIZE(cap_switches));
 
     ImGui::Separator();
     ImGui::BeginDisabled(!freeze_camera);
@@ -306,8 +339,7 @@ void OpenSwitchOptions() {
     ImGui::Checkbox("Torso Rotations", &enable_torso_rotation);
 
     ImGui::Separator();
-    if (ImGui::Combo("Powerup###powerup_state", &switch_state_powerup, powerup_switches, IM_ARRAYSIZE(powerup_switches)))
-        vanish_transparency = 128;
+    SwitchOption("Powerup###powerup_state", &switch_state_powerup, powerup_switches, IM_ARRAYSIZE(powerup_switches));
     ImGui::BeginDisabled(switch_state_powerup <= 1 || switch_state_powerup == 3);
     ImGui::SliderInt("###transparency", &vanish_transparency, 0, 255, "Alpha %d", ImGuiSliderFlags_AlwaysClamp);
     ImGui::EndDisabled();
@@ -353,8 +385,13 @@ void OpenExtraOptions() {
         if (ImGuiKnobs::Knob("Angle", &face_angle, -180.f, 180.f, 0.f, "%.0f deg", ImGuiKnobVariant_Dot, 0.f, ImGuiKnobFlags_DragHorizontal))
             gMarioStates[0].faceAngle[1] = (s16)(face_angle * 182.04f);
         else face_angle = (float)gMarioStates[0].faceAngle[1] / 182.04;
-        if (ImGui::IsItemHovered() && ImGui::IsMouseReleased(ImGuiMouseButton_Right))
-            ImGui::OpenPopup("###anglePresets");
+        if (ImGui::IsItemHovered()) {
+            ImGui::BeginTooltip();
+            ImGui::TextDisabled("Right click for more options");
+            ImGui::EndTooltip();
+            if (ImGui::IsMouseReleased(ImGuiMouseButton_Right))
+                ImGui::OpenPopup("###anglePresets");
+        }
         if (ImGui::BeginPopup("###anglePresets")) {
             ImGui::Checkbox("Spin", &is_spinning);
             ImGui::BeginDisabled(!is_spinning);
@@ -366,8 +403,13 @@ void OpenExtraOptions() {
 
         ImGui::SameLine();
         ImGuiKnobs::KnobInt("Walkpoint", &walkpoint_speed, 0, 127, 0, "%d", ImGuiKnobVariant_Tick, 0, ImGuiKnobFlags_DragHorizontal);
-        if (ImGui::IsItemHovered() && ImGui::IsMouseReleased(ImGuiMouseButton_Right))
-            ImGui::OpenPopup("###walkpointPresets");
+        if (ImGui::IsItemHovered()) {
+            ImGui::BeginTooltip();
+            ImGui::TextDisabled("Right click for more options");
+            ImGui::EndTooltip();
+            if (ImGui::IsMouseReleased(ImGuiMouseButton_Right))
+                ImGui::OpenPopup("###walkpointPresets");
+        }
         if (ImGui::BeginPopup("###walkpointPresets")) {
             if (ImGui::Selectable("Running")) walkpoint_speed = 127;
             if (ImGui::Selectable("Walking")) walkpoint_speed = 36;
@@ -417,50 +459,56 @@ void OpenAccessorySettings() {
 void OpenModelSettings() {
     if (AnyModelsEnabled() && active_saturn_model_index != -1) {
         PackData* pack = DynOS_Pack_GetFromIndex(active_saturn_model_index);
+        if (ImGui::BeginMenuBar()) {
+            if (ImGui::BeginMenu("Model")) {
+                if (ImGui::MenuItem("Refresh")) {
+                    current_expressions.clear();
+                    UpdateEditorLabels();
+                    LoadModelData(active_saturn_model_index, pack->mEnabled, false);
+                }
+                ImGui::BeginDisabled(accessory_packs.size() <= 0);
+                if (ImGui::BeginMenu("Accessories")) {
+                    OpenAccessorySettings();
+                    ImGui::EndMenu();
+                }
+                ImGui::EndDisabled();
+                ImGui::Separator();
+                ImGui::Checkbox("Show All Expressions", &ignore_expression_visibility);
+                ImGui::Checkbox("Preview Textures", &configExpressionPreviews);
+                ImGui::EndMenu();
+            }
+
+            if (ImGui::BeginMenu("Switches")) {
+                OpenSwitchOptions();
+                ImGui::EndMenu();
+            }
+            ImGui::BeginDisabled(gMarioStates[0].marioObj == NULL);
+            if (ImGui::BeginMenu("Extra")) {
+                OpenExtraOptions();
+                ImGui::EndMenu();
+            }
+            ImGui::EndDisabled();
+            
+            ImGui::EndMenuBar();
+        }
+
+        // Model Color Codes
+        if (model_color_code_list.size() > 0)
+            OpenModelCCSelector(pack, model_color_code_list);
+
+        // Expressions
+        OpenModelExpressionSelector(pack);
+    }
+}
+
+void PopupModelSettings() {
+    if (AnyModelsEnabled() && active_saturn_model_index != -1) {
+        PackData* pack = DynOS_Pack_GetFromIndex(active_saturn_model_index);
         std::string popup_label = pack->mDisplayName.begin();
         popup_label += " Settings###model_settings";
         show_window_model_settings = ImGui::BeginPopup(popup_label.c_str(), ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_MenuBar);
         if (show_window_model_settings) {
-            // Switch Options
-            if (ImGui::BeginMenuBar()) {
-                if (ImGui::BeginMenu("Model")) {
-                    if (ImGui::MenuItem("Refresh")) {
-                        current_expressions.clear();
-                        UpdateEditorLabels();
-                        LoadModelData(active_saturn_model_index, pack->mEnabled, false);
-                    }
-                    ImGui::BeginDisabled(accessory_packs.size() <= 0);
-                    if (ImGui::BeginMenu("Accessories")) {
-                        OpenAccessorySettings();
-                        ImGui::EndMenu();
-                    }
-                    ImGui::EndDisabled();
-                    ImGui::Separator();
-                    ImGui::Checkbox("Show All Expressions", &ignore_expression_visibility);
-                    ImGui::Checkbox("Preview Textures", &configExpressionPreviews);
-                    ImGui::EndMenu();
-                }
-
-                if (ImGui::BeginMenu("Switches")) {
-                    OpenSwitchOptions();
-                    ImGui::EndMenu();
-                }
-                ImGui::BeginDisabled(gMarioStates[0].marioObj == NULL);
-                if (ImGui::BeginMenu("Extra")) {
-                    OpenExtraOptions();
-                    ImGui::EndMenu();
-                }
-                ImGui::EndDisabled();
-                
-                ImGui::EndMenuBar();
-            }
-
-            // Model Color Codes
-            if (model_color_code_list.size() > 0)
-                OpenModelCCSelector(pack, model_color_code_list);
-
-            // Expressions
-            OpenModelExpressionSelector(pack);
+            OpenModelSettings();
             ImGui::EndPopup();
         }
     }
@@ -472,7 +520,6 @@ static char model_search_term[256] = "";
 std::vector<std::pair<PackData*, bool>> model_packs;
 
 void OpenModelSelector() {
-
     if (model_packs.size() <= 0) {
         model_packs.clear();
         for (int i = 0; i < DynOS_Pack_GetCount(); i++) {

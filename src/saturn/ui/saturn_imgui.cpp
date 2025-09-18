@@ -144,7 +144,7 @@ void imgui_update() {
         SDL_StartTextInput();
 
         // Model Settings
-        OpenModelSettings();
+        PopupModelSettings();
         if (!gDjuiInMainMenu && !gDjuiChatBoxFocus && !gDjuiConsoleFocus && !gInteractableOverridePad &&
             AnyModelsEnabled() && active_saturn_model_index != -1) {
 
@@ -206,7 +206,14 @@ void imgui_update() {
             }
 
             // Models
-            if (ImGui::BeginMenu("Avatar")) {      
+            if (ImGui::BeginMenu("Avatar")) {     
+                ImGui::BeginDisabled(!AnyModelsEnabled() || active_saturn_model_index == -1);
+                if (ImGui::BeginMenu("Model")) {
+                    OpenModelSettings();
+                    ImGui::EndMenu();
+                }
+                ImGui::EndDisabled();
+                
                 // Switch Options
                 if (ImGui::BeginMenu("Switches")) {
                     OpenSwitchOptions();
