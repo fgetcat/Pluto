@@ -76,6 +76,8 @@ bool screenshot_custom_res;
 int screenshot_multiplier = 1;
 int screenshot_size[2] = { 320, 240 };
 
+char status_text[256] = { 0 };
+
 void imgui_init() {
     pluto_animations_list = GetPAnimList("dynos/anims");
 }
@@ -186,6 +188,8 @@ void imgui_update() {
                 ImGui::Separator();
                 if (ImGui::MenuItem("Color Code Editor", NULL, show_window_cc_editor)) show_window_cc_editor = !show_window_cc_editor;
                 if (ImGui::MenuItem("Animation", NULL, show_window_animations, freeze_camera && !enable_head_rotation)) show_window_animations = !show_window_animations;
+                ImGui::Separator();
+                ImGui::Checkbox("Auto Reload Models", &configAutoReloadModels);
                 ImGui::EndMenu();
             }
 
@@ -232,6 +236,7 @@ void imgui_update() {
                 OpenModelSelector();
                 ImGui::EndMenu();
             }
+
             if (ImGui::BeginMenu("World")) {
                 OpenAutoChromaMenu();
                 OpenQuickOptions();
@@ -239,6 +244,18 @@ void imgui_update() {
             }
 
             ImGui::EndMainMenuBar();
+        }
+
+        ImGuiViewportP* viewport = (ImGuiViewportP*)(void*)ImGui::GetMainViewport();
+        ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoFocusOnAppearing;
+        if (status_text[0] != '\0') {
+            if (ImGui::BeginViewportSideBar("##MainStatusBar", viewport, ImGuiDir_Up, ImGui::GetFrameHeight(), window_flags)) {
+                if (ImGui::BeginMenuBar()) {
+                    ImGui::Text(status_text);
+                    ImGui::EndMenuBar();
+                }
+                ImGui::End();
+            }
         }
 
         // CC Editor

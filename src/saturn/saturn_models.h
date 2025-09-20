@@ -49,7 +49,7 @@ extern "C" {
     extern float marioScaleX;
     extern float marioScaleY;
     extern float marioScaleZ;
-    extern void LoadModelData(int, bool, bool);
+    extern void LoadModelData(int, bool, bool, bool);
     extern void LoadAccessories();
     extern void RefreshActiveExpressions();
     extern bool refreshEditorPalette;
@@ -58,6 +58,9 @@ extern "C" {
     extern int hat_pos[3];
     extern int hat_rot[3];
     extern float hat_scale[3];
+    extern bool CheckModelNeedsReload();
+    extern bool ModelGeoBinExists(int);
+    extern bool canBeReloaded;
 #ifdef __cplusplus
 }
 #endif

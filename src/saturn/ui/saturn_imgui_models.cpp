@@ -274,7 +274,7 @@ void OpenModelCCSelector(PackData* pack, std::vector<std::string> cc_list) {
 
             current_expressions.clear();
             UpdateEditorLabels();
-            LoadModelData(pack->mIndex, pack->mEnabled, false);
+            add_to_model_queue(pack->mIndex, pack->mEnabled, false);
         }
         ImGui::EndDragDropTarget();
     }
@@ -436,7 +436,7 @@ void OpenAccessorySettings() {
                 ImGui::BeginDisabled(active_accessory_index != accessory_packs[i] && active_accessory_index != -1);
                 if (ImGui::Selectable(pack_id.c_str(), &pack->mEnabled)) {
                     // Toggle model
-                    LoadModelData(accessory_packs[i], pack->mEnabled, false);
+                    add_to_model_queue(accessory_packs[i], pack->mEnabled, false);
                     UpdateEditorLabels();
                 }
                 ImGui::EndDisabled();
@@ -464,7 +464,7 @@ void OpenModelSettings() {
                 if (ImGui::MenuItem("Refresh")) {
                     current_expressions.clear();
                     UpdateEditorLabels();
-                    LoadModelData(active_saturn_model_index, pack->mEnabled, false);
+                    add_to_model_queue(active_saturn_model_index, pack->mEnabled, false);
                 }
                 ImGui::BeginDisabled(accessory_packs.size() <= 0);
                 if (ImGui::BeginMenu("Accessories")) {
@@ -552,9 +552,8 @@ void OpenModelSelector() {
                 if (IsSaturnModel(i)) {
                     current_expressions.clear();
                     format_warning_dismissed = false;
-                    spawn_object(gMarioStates[0].marioObj, 0x95, bhvGoldenCoinSparkles);
                 }
-                LoadModelData(i, pack->mEnabled, false);
+                add_to_model_queue(i, pack->mEnabled, false);
                 if (IsSaturnModel(i)) UpdateEditorLabels();
                 if (active_saturn_model_index == -1) custom_eyes = false;
             }
@@ -581,7 +580,7 @@ void OpenModelSelector() {
     if (active_saturn_model_index != -1) {
         if (ImGui::Selectable("Reset", false, ImGuiSelectableFlags_DontClosePopups)) {
             for (int i = 0; i < DynOS_Pack_GetCount(); i++) {
-                if (IsSaturnModel(i)) LoadModelData(i, false, false);
+                if (IsSaturnModel(i)) LoadModelData(i, false, false, true);
             }
         }
     }

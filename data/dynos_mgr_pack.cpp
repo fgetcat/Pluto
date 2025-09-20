@@ -241,3 +241,17 @@ void DynOS_Pack_AddTex(PackData* aPackData, DataNode<TexData>* aTexData) {
         DynOS_Tex_Activate(aTexData, false);
     }
 }
+
+void DynOS_Pack_ResetAndRegenerate() {
+    // Disable all packs and clear their data
+    for (auto& pack : DynosPacks()) {
+        DynOS_Pack_SetEnabled(&pack, false);
+        pack.mGfxData.Clear();
+        pack.mTextures.Clear();
+        pack.mLoaded = false;
+        pack.mEnabledSet = false;
+    }
+
+    // Re-initialize all packs (simulate program restart)
+    DynOS_Pack_Init();
+}

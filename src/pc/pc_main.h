@@ -71,6 +71,8 @@ extern bool gGfxInited;
 extern struct GfxWindowManagerAPI* wm_api;
 void game_deinit(void);
 void game_exit(void);
+extern bool queued_reload_models;
+extern void add_to_model_queue(int index, bool enabled, bool first_use);
 
 #ifdef __cplusplus
 extern void send_palette_to_network();

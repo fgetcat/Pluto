@@ -18,6 +18,8 @@ extern "C" {
     extern int screenshot_multiplier;
     extern bool screenshot_custom_res;
 
+    extern char status_text[256];
+
     void imgui_init();
     void imgui_init_backend(SDL_Window*, SDL_GLContext);
     void imgui_handle_events(SDL_Event*);

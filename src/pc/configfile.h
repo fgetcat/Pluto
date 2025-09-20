@@ -133,6 +133,7 @@ extern unsigned int configDjuiScale;
 extern bool         configCoopCompatibility;
 extern bool         configGlobalPlayerModels;
 extern char         configLastVersion[];
+extern bool         configAutoReloadModels;
 
 void enable_queued_mods();
 void configfile_load(void);

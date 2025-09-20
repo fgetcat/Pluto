@@ -113,6 +113,10 @@ void dynos_generate_packs(const char* directory) {
     DynOS_Gfx_GeneratePacks(directory);
 }
 
+void dynos_pack_reset_and_regenerate(void) {
+    DynOS_Pack_ResetAndRegenerate();
+}
+
 // -- geos -- //
 
 void dynos_actor_override(void** aSharedChild) {

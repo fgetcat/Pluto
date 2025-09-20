@@ -30,6 +30,7 @@
 #include "game/game_init.h"
 #include "game/main.h"
 #include "game/rumble_init.h"
+#include "src/game/object_helpers.h"
 
 #include "include/bass/bass.h"
 #include "include/bass/bass_fx.h"
@@ -353,6 +354,53 @@ void* main_game_init(UNUSED void* arg) {
     gGameInited = true;
 }
 
+pthread_t myThreadId;
+int queued_index = -1;
+bool queued_enabled = false;
+bool queued_first_use = false;
+
+bool queued_reload_models = false;
+
+void add_to_model_queue(int index, bool enabled, bool first_use) {
+    if (gMarioStates[0].marioObj != NULL) {
+        spawn_object(gMarioStates[0].marioObj, 0x95, bhvGoldenCoinSparkles);
+    }
+    queued_index = index;
+    queued_enabled = enabled;
+    queued_first_use = first_use;
+}
+
+// Define your thread function
+void* my_thread_func(void* arg) {
+    while (1) {
+        if (queued_index != -1) {
+            if (queued_enabled) sprintf(status_text, "Loading model %d ...", queued_index);
+            LoadModelData(queued_index, queued_enabled, queued_first_use, false);
+            queued_index = -1;
+            queued_enabled = false;
+            queued_first_use = false;
+            status_text[0] = '\0';
+        }
+        usleep(25 * 1000);
+        // Auto-reload models
+        if (configAutoReloadModels == true) {
+            if (CheckModelNeedsReload() && canBeReloaded) {
+                sprintf(status_text, "Reloading model %d ...", active_saturn_model_index);
+                dynos_pack_reset_and_regenerate();
+                if (gMarioStates[0].marioObj != NULL) spawn_object(gMarioStates[0].marioObj, MODEL_BUBBLE, bhvGoldenCoinSparkles);
+                dynos_gfx_init();
+                dynos_packs_init();
+                LoadModelData(active_saturn_model_index, true, false, true);
+                if (gMarioStates[0].marioObj != NULL) spawn_object(gMarioStates[0].marioObj, MODEL_BUBBLE, bhvGoldenCoinSparkles);
+                canBeReloaded = ModelGeoBinExists(active_saturn_model_index);
+                status_text[0] = '\0';
+            }
+        }
+        usleep(25 * 1000);
+    }
+    return NULL;
+}
+
 extern void djui_panel_do_host(bool reconnecting, bool playSound);
 int main(int argc, char *argv[]) {
 
@@ -391,6 +439,11 @@ int main(int argc, char *argv[]) {
 
     // initialize sm64 data and controllers
     thread5_game_loop(NULL);
+
+    // Start your custom thread here
+    if (pthread_create(&myThreadId, NULL, my_thread_func, NULL) != 0) {
+        printf("Failed to create my thread\n");
+    }
 
     // Initialize djui
     djui_init();

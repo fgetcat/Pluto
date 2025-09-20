@@ -176,6 +176,7 @@ unsigned int configDjuiScale                      = 0;
 bool         configCoopCompatibility              = false;
 bool         configGlobalPlayerModels             = true;
 char         configLastVersion[MAX_CONFIG_STRING] = SM64COOPDX_VERSION;
+bool configAutoReloadModels = false;
 
 static const struct ConfigOption options[] = {
     {.name = "fullscreen",                     .type = CONFIG_TYPE_BOOL, .boolValue = &configWindow.fullscreen},
@@ -306,7 +307,8 @@ static const struct ConfigOption options[] = {
     {.name = "djui_theme",                     .type = CONFIG_TYPE_UINT  , .uintValue   = &configDjuiTheme},
     {.name = "djui_theme_center",              .type = CONFIG_TYPE_BOOL  , .boolValue   = &configDjuiThemeCenter},
     {.name = "djui_scale",                     .type = CONFIG_TYPE_UINT  , .uintValue   = &configDjuiScale},
-    {.name = "last_version",                   .type = CONFIG_TYPE_STRING, .stringValue = (char*)&configLastVersion, .maxStringLength = MAX_CONFIG_STRING}
+    {.name = "last_version",                   .type = CONFIG_TYPE_STRING, .stringValue = (char*)&configLastVersion, .maxStringLength = MAX_CONFIG_STRING},
+    {.name = "auto_reload_models",            .type = CONFIG_TYPE_BOOL  , .boolValue   = &configAutoReloadModels},
 };
 
 // FunctionConfigOption functions
@@ -397,7 +399,7 @@ static void dynos_pack_read(char** tokens, int numTokens) {
     for (int i = 0; i < packCount; i++) {
         const char* pack = dynos_pack_get_name(i);
         if (!strcmp(fullPackName, pack)) {
-            LoadModelData(i, enabled, true);
+            LoadModelData(i, enabled, true, true);
             break;
         }
     }

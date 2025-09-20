@@ -877,6 +877,7 @@ Pair<const char *, GfxData *>* DynOS_Pack_GetActor(PackData* aPackData, const ch
 void DynOS_Pack_AddActor(PackData* aPackData, const char* aActorName, GfxData* aGfxData);
 DataNode<TexData>* DynOS_Pack_GetTex(PackData* aPackData, const char* aTexName);
 void DynOS_Pack_AddTex(PackData* aPackData, DataNode<TexData>* aTexData);
+void DynOS_Pack_ResetAndRegenerate();
 
 //
 // Actor Manager

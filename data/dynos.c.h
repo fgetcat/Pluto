@@ -34,6 +34,7 @@ void dynos_pack_set_enabled(s32 index, bool value);
 bool dynos_pack_get_exists(s32 index);
 void dynos_pack_init(void);
 void dynos_generate_packs(const char* directory);
+void dynos_pack_reset_and_regenerate(void);
 
 // -- geos -- //
 void dynos_actor_override(void** aSharedChild);

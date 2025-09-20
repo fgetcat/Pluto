@@ -70,6 +70,8 @@ int hat_pos[3] = {0, 0, 0};
 int hat_rot[3] = {0, 0, 0};
 float hat_scale[3] = {1.f, 1.f, 1.f};
 
+bool canBeReloaded = false;
+
 /* Update our CC Editor colors with our "defaultColor" values.
 This should be called when loading a CC, to insert our new colors into the editor. */
 void UpdateEditorFromPalette() {
@@ -182,8 +184,15 @@ void DisableAllAccessories() {
     }
 }
 
+bool ModelGeoBinExists(int index) {
+    if (index < 0 || index >= DynOS_Pack_GetCount()) return false;
+    PackData* pack = DynOS_Pack_GetFromIndex(index);
+    if (!pack->mLoaded) return false;
+    return std::filesystem::exists(std::filesystem::path(pack->mPath + "/mario_geo.bin"));
+}
+
 /* Loads Saturn model data at a given DynOS index. */
-void LoadModelData(int index, bool enabled, bool first_use) {
+void LoadModelData(int index, bool enabled, bool first_use, bool auto_reload) {
     PackData* pack = DynOS_Pack_GetFromIndex(index);
     if (first_use && enabled && IsAccessoryModel(index)) {
         DynOS_Pack_SetEnabled(pack, false);
@@ -203,6 +212,7 @@ void LoadModelData(int index, bool enabled, bool first_use) {
     // Attempt to enable pack
     DynOS_Pack_SetEnabled(pack, enabled);
     if (!pack->mLoaded) return;
+    canBeReloaded = auto_reload == false || ModelGeoBinExists(index);
 
     switch_state_eyes = 0;
     custom_eyes = false;
@@ -224,7 +234,7 @@ void LoadModelData(int index, bool enabled, bool first_use) {
             // Reload the active Saturn model if the accessory is disabled
             PackData* pack = DynOS_Pack_GetFromIndex(active_saturn_model_index);
             current_expressions.clear();
-            LoadModelData(active_saturn_model_index, pack->mEnabled, false);
+            LoadModelData(active_saturn_model_index, pack->mEnabled, false, auto_reload);
         }
     // SATURN MODELS
     } else if (IsSaturnModel(index)) {
@@ -271,4 +281,18 @@ void RefreshActiveExpressions() {
 
     for (int i = 0; i < current_expressions.size(); i++)
         current_expressions[i].Visible = false;
+}
+
+bool CheckModelNeedsReload() {
+    if (!canBeReloaded) return false;
+    if (active_saturn_model_index == -1) return false;
+    PackData* pack = DynOS_Pack_GetFromIndex(active_saturn_model_index);
+    if (!pack->mLoaded || !pack->mEnabled) return false;
+
+    // check if mario_geo.bin is missing
+    if (!std::filesystem::exists(std::filesystem::path(pack->mPath + "/mario_geo.bin"))) {
+        return true;
+    }
+
+    return false;
 }
