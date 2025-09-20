@@ -354,7 +354,7 @@ void* main_game_init(UNUSED void* arg) {
     gGameInited = true;
 }
 
-pthread_t myThreadId;
+pthread_t dynosThreadId;
 int queued_index = -1;
 bool queued_enabled = false;
 bool queued_first_use = false;
@@ -370,18 +370,44 @@ void add_to_model_queue(int index, bool enabled, bool first_use) {
     queued_first_use = first_use;
 }
 
-// Define your thread function
-void* my_thread_func(void* arg) {
+void* dynos_thread_func(void* arg) {
     while (1) {
         if (queued_index != -1) {
-            if (queued_enabled) sprintf(status_text, "Loading model %d ...", queued_index);
-            LoadModelData(queued_index, queued_enabled, queued_first_use, false);
+            double start_time = clock_elapsed_f64();
+            pthread_t loader_thread;
+            struct {
+                int index;
+                bool enabled;
+                bool first_use;
+            } args = { queued_index, queued_enabled, queued_first_use };
+
+            // Helper function to call LoadModelData
+            void* loader_func(void* v) {
+                typeof(args)* a = v;
+                LoadModelData(a->index, a->enabled, a->first_use, false);
+                return NULL;
+            }
+
+            pthread_create(&loader_thread, NULL, loader_func, &args);
+
+            // Wait for up to 0.25s, then show status if still running
+            while (1) {
+                double elapsed = clock_elapsed_f64() - start_time;
+                int res = _pthread_tryjoin(loader_thread, NULL);
+                if (res == 0) break; // finished
+                if (elapsed > 0.25 && queued_enabled) {
+                    sprintf(status_text, "Loading model %d ...", queued_index);
+                }
+                usleep(10 * 1000);
+            }
+            status_text[0] = '\0';
+
             queued_index = -1;
             queued_enabled = false;
             queued_first_use = false;
-            status_text[0] = '\0';
         }
         usleep(25 * 1000);
+        
         // Auto-reload models
         if (configAutoReloadModels == true) {
             if (CheckModelNeedsReload() && canBeReloaded) {
@@ -441,8 +467,9 @@ int main(int argc, char *argv[]) {
     thread5_game_loop(NULL);
 
     // Start your custom thread here
-    if (pthread_create(&myThreadId, NULL, my_thread_func, NULL) != 0) {
-        printf("Failed to create my thread\n");
+    if (pthread_create(&dynosThreadId, NULL, dynos_thread_func, NULL) != 0) {
+        printf("Failed to create dynos thread\n");
+        return 0;
     }
 
     // Initialize djui
