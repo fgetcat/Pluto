@@ -1028,7 +1028,7 @@ static void geo_process_animated_part(struct GraphNodeAnimatedPart *node) {
  */
 static void geo_process_mcomp_extra(struct GraphNodeAnimatedPart *node) {
     // To-do: This
-    if (override_anim && enable_custom_anim && mcomp_extra_bone) {
+    if (override_anim && enable_custom_anim && mcomp_bone_detected && enable_extra_bones) {
         geo_process_animated_part(node);
     } else {
         if (node->displayList != NULL) {
@@ -1310,6 +1310,10 @@ bool node_is_any_player(struct Object *node) {
  * Process an object node.
  */
 static void geo_process_object(struct Object *node) {
+    if (node == gMarioObject) {
+        current_bone_index = 0;
+    }
+
     // Chroma Key: Objects
     if (auto_chroma && !chroma_show_objects && !node_is_any_player(node)) return;
 
@@ -1680,9 +1684,12 @@ void geo_process_node_and_siblings(struct GraphNode *firstNode) {
                         geo_process_object((struct Object *) curGraphNode);
                         break;
                     case GRAPH_NODE_TYPE_ANIMATED_PART:
+                        if (gCurGraphNodeObject == &gMarioObject->header.gfx) current_bone_index += 1;
                         geo_process_animated_part((struct GraphNodeAnimatedPart *) curGraphNode);
                         break;
                     case GRAPH_NODE_TYPE_MCOMP_EXTRA:
+                        mcomp_bone_detected = true;
+                        if (gCurGraphNodeObject == &gMarioObject->header.gfx) current_bone_index += 1;
                         geo_process_mcomp_extra((struct GraphNodeAnimatedPart *) curGraphNode);
                         break;
                     case GRAPH_NODE_TYPE_BILLBOARD:
@@ -1755,6 +1762,7 @@ static void geo_clear_interp_variables(void) {
 void geo_process_root(struct GraphNodeRoot *node, Vp *b, Vp *c, s32 clearColor) {
     // clear interp stuff
     geo_clear_interp_variables();
+    mcomp_bone_detected = false;
 
     if (node->node.flags & GRAPH_RENDER_ACTIVE) {
         gDisplayListHeap = growing_pool_init(gDisplayListHeap, DISPLAY_LIST_HEAP_SIZE);

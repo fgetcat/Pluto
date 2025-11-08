@@ -51,7 +51,10 @@ int paused_frame;
 bool hang_anim;
 bool loop_anim;
 bool enable_custom_anim;
-bool mcomp_extra_bone;
+
+bool mcomp_bone_detected;
+bool enable_extra_bones;
+int current_bone_index = 0;
 
 bool is_spinning;
 float spinning_speed = 1.f;
@@ -190,4 +193,6 @@ void saturn_action_idle(struct MarioState *m) {
         pause_anim = false;
         is_editing_panim = false;
     }
+
+    enable_extra_bones = current_pluto_anim.BoneCount == current_bone_index;
 }

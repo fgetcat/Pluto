@@ -126,7 +126,6 @@ void OpenAnimationsMenu() {
                             selected_panim_index = n;
                             current_pluto_anim = LoadPAnim(pluto_animations_list[n].FilePath);
                             loop_anim = current_pluto_anim.Looping;
-                            mcomp_extra_bone = current_pluto_anim.BoneCount > 20 ? true : false;
                             if (override_anim && !pause_anim) gMarioStates[0].marioObj->header.gfx.animInfo.animFrame = 0;
                             break;
                         }

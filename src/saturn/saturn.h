@@ -45,7 +45,9 @@ extern "C" {
     extern bool hang_anim;
     extern bool loop_anim;
     extern bool enable_custom_anim;
-    extern bool mcomp_extra_bone;
+    extern bool mcomp_bone_detected;
+    extern bool enable_extra_bones;
+    extern int current_bone_index;
 
     extern bool is_spinning;
     extern float spinning_speed;
