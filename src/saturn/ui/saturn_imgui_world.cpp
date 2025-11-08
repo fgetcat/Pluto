@@ -12,10 +12,25 @@
 #include "saturn/libs/imgui/imgui_internal.h"
 #include "saturn/libs/imgui/imgui_impl_sdl.h"
 #include "saturn/libs/imgui/imgui_impl_opengl3.h"
+#include "pc/gfx/gfx_pc.h"
 
 #include <SDL2/SDL.h>
 
 ImVec4 uiChromaColor = ImVec4(0.0f / 255.0f, 255.0f / 255.0f, 0.0f / 255.0f, 255.0f / 255.0f);
+ImVec4 uiLightingColor = ImVec4(255.0f / 255.0f, 255.0f / 255.0f, 255.0f / 255.0f, 255.0f / 255.0f);
+ImVec4 uiVertexColor = ImVec4(255.0f / 255.0f, 255.0f / 255.0f, 255.0f / 255.0f, 255.0f / 255.0f);
+ImVec4 uiFogColor = ImVec4(255.0f / 255.0f, 255.0f / 255.0f, 255.0f / 255.0f, 255.0f / 255.0f);
+
+bool Color4Widget(const char* label, ImVec4 *uiColor, u8 intColor[3]) {
+    if (ImGui::ColorEdit4(label, (float*)uiColor, ImGuiColorEditFlags_NoAlpha | ImGuiColorEditFlags_InputRGB |
+                                                ImGuiColorEditFlags_Uint8 | ImGuiColorEditFlags_NoOptions | ImGuiColorEditFlags_NoInputs)) {
+        intColor[0] = (u8)(uiColor->x * 255);
+        intColor[1] = (u8)(uiColor->y * 255);
+        intColor[2] = (u8)(uiColor->z * 255);
+        return true;
+    }
+    return false;
+}
 
 void saturn_set_chroma_color(ImVec4 color) {
     uiChromaColor = color;
@@ -69,7 +84,7 @@ void OpenAutoChromaMenu() {
     // Other Auto-chroma Settings
     ImGui::Checkbox("Show Objects", &chroma_show_objects);
     ImGui::Checkbox("Show Level Geometry", &chroma_show_geo);
-    ImGui::Checkbox("Affects Light", &chroma_affects_light);
+    ImGui::Checkbox("Affected by Light", &chroma_affects_light);
 
     ImGui::EndDisabled();
     ImGui::EndChild();
@@ -135,9 +150,9 @@ void JoystickSlider(float& _x, float& _y, float scale = 100.f, float b_scale = 1
 };
 
 void OpenQuickOptions() {
-    ImGui::Checkbox("Lighting Direction", &shade_lighting_enabled);
+    ImGui::Checkbox("Custom Lighting", &shade_lighting_enabled);
     if (shade_lighting_enabled) {
-        ImGui::BeginChild("##lighting", ImVec2(175, 92), ImGuiChildFlags_Border);
+        ImGui::BeginChild("##lighting", ImVec2(175, 115), ImGuiChildFlags_Border);
         JoystickSlider(shade_lighting_dir[0], shade_lighting_dir[1], 35.f, 7.f);
         ImGui::SameLine();
         ImGui::VSliderFloat("##lighting_z", ImVec2(20, 35*2), &shade_lighting_dir[2], -1.f, 1.f, "");
@@ -150,6 +165,32 @@ void OpenQuickOptions() {
             shade_lighting_dir[2] = 0.f;
         }
         ImGui::EndChild();
+        if (Color4Widget("Color", &uiLightingColor, shade_lighting_color)) {
+            uiVertexColor = uiLightingColor;
+            uiFogColor = uiLightingColor;
+            shade_lighting_fog[0] = shade_lighting_vertex[0] = shade_lighting_color[0];
+            shade_lighting_fog[1] = shade_lighting_vertex[1] = shade_lighting_color[1];
+            shade_lighting_fog[2] = shade_lighting_vertex[2] = shade_lighting_color[2];
+        }
+        if (ImGui::IsItemHovered()) {
+            ImGui::BeginTooltip();
+            ImGui::TextDisabled("Right click for more options");
+            ImGui::EndTooltip();
+            if (ImGui::IsMouseReleased(ImGuiMouseButton_Right))
+                ImGui::OpenPopup("###lightingColorPresets");
+        }
+        if (ImGui::BeginPopup("###lightingColorPresets")) {
+            if (ImGui::MenuItem("Reset")) {
+                uiFogColor = uiVertexColor = uiLightingColor = ImVec4(255.0f / 255.0f, 255.0f / 255.0f, 255.0f / 255.0f, 255.0f / 255.0f);
+                shade_lighting_color[0] = shade_lighting_color[1] = shade_lighting_color[2] = 255;
+                shade_lighting_vertex[0] = shade_lighting_vertex[1] = shade_lighting_vertex[2] = 255;
+                shade_lighting_fog[0] = shade_lighting_fog[1] = shade_lighting_fog[2] = 255;
+            }
+            Color4Widget("Lighting Color", &uiLightingColor, shade_lighting_color);
+            Color4Widget("Background Color", &uiVertexColor, shade_lighting_vertex);
+            Color4Widget("Fog Color", &uiFogColor, shade_lighting_fog);
+            ImGui::EndPopup();
+        }
         ImGui::EndChild();
     }
 

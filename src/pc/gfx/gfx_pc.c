@@ -1011,6 +1011,11 @@ static void OPTIMIZE_O3 gfx_sp_vertex(size_t n_vertices, size_t dest_index, cons
             r *= gLightingColor[0] / 255.0f;
             g *= gLightingColor[1] / 255.0f;
             b *= gLightingColor[2] / 255.0f;
+            if (shade_lighting_enabled) {
+                r *= shade_lighting_color[0] / 255.0f;
+                g *= shade_lighting_color[1] / 255.0f;
+                b *= shade_lighting_color[2] / 255.0f;
+            }
             d->color.r = r > 255 ? 255 : r;
             d->color.g = g > 255 ? 255 : g;
             d->color.b = b > 255 ? 255 : b;
@@ -1039,6 +1044,17 @@ static void OPTIMIZE_O3 gfx_sp_vertex(size_t n_vertices, size_t dest_index, cons
                 d->color.r = v->cn[0];
                 d->color.g = v->cn[1];
                 d->color.b = v->cn[2];
+            }
+
+            if (shade_lighting_enabled && ((auto_chroma && chroma_affects_light) || !auto_chroma)) {
+                d->color.r *= shade_lighting_vertex[0] / 255.0f;
+                d->color.g *= shade_lighting_vertex[1] / 255.0f;
+                d->color.b *= shade_lighting_vertex[2] / 255.0f;
+                if (shade_lighting_dir[2] >= 0.0f) {
+                    d->color.r *= (shade_lighting_dir[2]+.5f)*2;
+                    d->color.g *= (shade_lighting_dir[2]+.5f)*2;
+                    d->color.b *= (shade_lighting_dir[2]+.5f)*2;
+                }
             }
 
             if (shade_lighting_enabled && shade_lighting_dir[2] >= 0.0f && ((auto_chroma && chroma_affects_light) || !auto_chroma)) {
@@ -1257,6 +1273,11 @@ static void OPTIMIZE_O3 gfx_sp_tri1(uint8_t vtx1_idx, uint8_t vtx2_idx, uint8_t 
             f32 r = gFogColor[0] / 255.0f;
             f32 g = gFogColor[1] / 255.0f;
             f32 b = gFogColor[2] / 255.0f;
+            if (shade_lighting_enabled && ((auto_chroma && chroma_affects_light) || !auto_chroma)) {
+                r *= shade_lighting_fog[0] / 255.0f;
+                g *= shade_lighting_fog[1] / 255.0f;
+                b *= shade_lighting_fog[2] / 255.0f;
+            }
             buf_vbo[buf_vbo_len++] = (rdp.fog_color.r / 255.0f) * r;
             buf_vbo[buf_vbo_len++] = (rdp.fog_color.g / 255.0f) * g;
             buf_vbo[buf_vbo_len++] = (rdp.fog_color.b / 255.0f) * b;

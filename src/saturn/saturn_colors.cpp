@@ -44,11 +44,14 @@ ColorTemplate chromaColor           {0,   0,   255, 127, 0,   0  };
 u16 gChromaKeyColor = 0x07C1;
 bool chroma_show_objects;
 bool chroma_show_geo;
-bool chroma_affects_light = true;
+bool chroma_affects_light;
 bool chroma_transparent_background;
 
 bool shade_lighting_enabled;
 float shade_lighting_dir[3] = {0.0f, 0.0f, 0.0f};
+u8 shade_lighting_color[3] = {255, 255, 255};
+u8 shade_lighting_vertex[3] = {255, 255, 255};
+u8 shade_lighting_fog[3] = {255, 255, 255};
 
 /* Converts a color template into a hex string */
 std::string HexifyColorTemplate(ColorTemplate &colorBodyPart) {
