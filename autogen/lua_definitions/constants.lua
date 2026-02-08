@@ -3451,7 +3451,10 @@ DIALOG_168 = 168
 DIALOG_169 = 169
 
 --- @type DialogId
-DIALOG_COUNT = 170
+DIALOG_COUNT = 171
+
+--- @type DialogId
+DIALOG_CUSTOM = 170
 
 --- @class ConsoleMessageLevel
 

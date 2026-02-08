@@ -68,6 +68,7 @@ bool show_window_machinima = true;
 bool show_window_cc_editor = true;
 bool show_window_model_settings = true;
 bool show_window_animations = true;
+bool show_window_dialog = false;
 
 std::vector<PlayerWindow> player_windows;
 bool show_window_mario = false;
@@ -144,8 +145,8 @@ void imgui_handle_binds(int scancode) {
             }
 
             if (scancode == (int)configKeyPlutoCreateDialog[i]) {
-                smlua_text_utils_dialog_replace(DIALOG_000,1,6,30,200, uiDialogText);
-                create_dialog_box(DIALOG_000);
+                smlua_text_utils_dialog_replace(DIALOG_CUSTOM,1,6,30,200, uiDialogText);
+                create_dialog_box(DIALOG_CUSTOM);
             }
         }
     }
@@ -163,16 +164,6 @@ void imgui_update() {
     if (show_menu) {
         if (gMarioStates[0].marioObj != NULL) {
         SDL_StartTextInput();
-
-        ImGui::Begin("Textbox Engine", NULL, ImGuiWindowFlags_AlwaysAutoResize);
-        ImGui::InputTextMultiline("###dialog_box", uiDialogText, IM_ARRAYSIZE(uiDialogText),
-            ImVec2(150, ImGui::GetTextLineHeight() * 6.5f), ImGuiInputTextFlags_None);
-        
-        if (ImGui::Button("Create###create_dialog_box")) {
-            smlua_text_utils_dialog_replace(DIALOG_000,1,6,30,200, uiDialogText);
-            create_dialog_box(DIALOG_000);
-        }
-        ImGui::End();
 
         // Model Settings
         PopupModelSettings();
@@ -235,6 +226,7 @@ void imgui_update() {
                 ImGui::Separator();
                 if (ImGui::MenuItem("Color Code Editor", NULL, show_window_cc_editor)) show_window_cc_editor = !show_window_cc_editor;
                 if (ImGui::MenuItem("Animation", NULL, show_window_animations, freeze_camera && !enable_head_rotation)) show_window_animations = !show_window_animations;
+                if (ImGui::MenuItem("Textbox", NULL, show_window_dialog)) show_window_dialog = !show_window_dialog;
                 ImGui::EndMenu();
             }
 
@@ -318,6 +310,19 @@ void imgui_update() {
                 ImGui::End();
                 BoneEditorWindow();
             }
+        }
+
+        // Dialog Editor
+        if (show_window_dialog) {
+            ImGui::Begin("Dialog Textbox", &show_window_dialog, ImGuiWindowFlags_AlwaysAutoResize);
+            ImGui::InputTextMultiline("###dialog_box", uiDialogText, IM_ARRAYSIZE(uiDialogText),
+                ImVec2(150, ImGui::GetTextLineHeight() * 6.5f), ImGuiInputTextFlags_None);
+            
+            if (ImGui::Button("Create###create_dialog_box")) {
+                smlua_text_utils_dialog_replace(DIALOG_CUSTOM,1,6,30,200, uiDialogText);
+                create_dialog_box(DIALOG_CUSTOM);
+            }
+            ImGui::End();
         }
     }
 
