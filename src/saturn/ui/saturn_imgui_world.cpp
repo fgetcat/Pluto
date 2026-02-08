@@ -13,6 +13,7 @@
 #include "saturn/libs/imgui/imgui_impl_sdl.h"
 #include "saturn/libs/imgui/imgui_impl_opengl3.h"
 #include "pc/gfx/gfx_pc.h"
+#include "libc/math.h"
 
 #include <SDL2/SDL.h>
 

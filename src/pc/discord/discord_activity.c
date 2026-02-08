@@ -116,7 +116,7 @@ void discord_activity_update(void) {
     if (gActiveMods.entryCount > 0) {
         for (u16 i = 0; i < gActiveMods.entryCount; i++) {
             struct Mod* mod = gActiveMods.entries[i];
-            if (strstr(mod->incompatible, "romhack")) {
+            if (mod->incompatible != NULL && strstr(mod->incompatible, "romhack")) {
                 largeImageKey = "glowshire";
                 smallImageKey = "play-icon-bg";
                 break;
