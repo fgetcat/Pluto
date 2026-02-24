@@ -64,11 +64,21 @@
 
 const BehaviorScript bhvHatFollow[] = {
     BEGIN(OBJ_LIST_DEFAULT),
-    ID(id_bhvMrIBody),
+    ID(id_bhvHatFollow),
     OR_INT(oFlags, OBJ_FLAG_UPDATE_GFX_POS_AND_ANGLE),
     CALL_NATIVE(bhv_hat_follow_init),
     BEGIN_LOOP(),
         CALL_NATIVE(bhv_hat_follow_loop),
+    END_LOOP(),
+};
+
+const BehaviorScript bhvChromaBox[] = {
+    BEGIN(OBJ_LIST_DEFAULT),
+    ID(id_bhvChromaBox),
+    OR_INT(oFlags, OBJ_FLAG_UPDATE_GFX_POS_AND_ANGLE),
+    CALL_NATIVE(bhv_chroma_box_init),
+    BEGIN_LOOP(),
+        CALL_NATIVE(bhv_chroma_box_loop),
     END_LOOP(),
 };
 

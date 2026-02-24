@@ -58,7 +58,7 @@ void saturn_set_chroma_color(ImVec4 color) {
 
 void OpenAutoChromaMenu() {
     ImGui::Checkbox("Chroma Key", &auto_chroma);
-    ImGui::BeginChild("auto_chroma", ImVec2(175, 108), ImGuiChildFlags_Border);
+    ImGui::BeginChild("auto_chroma", ImVec2(175, 0), ImGuiChildFlags_Border | ImGuiChildFlags_AutoResizeY);
     ImGui::BeginDisabled(!auto_chroma);
     // Skybox Color
     ImGui::BeginDisabled(chroma_transparent_background);
@@ -86,6 +86,7 @@ void OpenAutoChromaMenu() {
     ImGui::Checkbox("Show Objects", &chroma_show_objects);
     ImGui::Checkbox("Show Level Geometry", &chroma_show_geo);
     ImGui::Checkbox("Affected by Light", &chroma_affects_light);
+    ImGui::Checkbox("Opaque Floor", &chroma_show_floor);
 
     ImGui::EndDisabled();
     ImGui::EndChild();

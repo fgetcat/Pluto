@@ -29,6 +29,7 @@
 #include "saturn/saturn.h"
 #include "saturn/saturn_textures.h"
 #include "saturn/saturn_models.h"
+#include "saturn/saturn_colors.h"
 
 #define TOAD_STAR_1_REQUIREMENT gBehaviorValues.ToadStar1Requirement
 #define TOAD_STAR_2_REQUIREMENT gBehaviorValues.ToadStar2Requirement
@@ -450,6 +451,18 @@ struct Object *find_hat_object(void) {
     return NULL;
 }
 
+struct Object *find_chroma_box(void) {
+    struct ObjectNode *list = &gObjectLists[OBJ_LIST_DEFAULT];
+    struct Object *obj;
+
+    for (obj = (struct Object *)list->next; obj != (struct Object *)list; obj = (struct Object *)obj->header.next) {
+        if (obj->behavior == segmented_to_virtual(bhvChromaBox)) {
+            return obj;
+        }
+    }
+    return NULL;
+}
+
 /**
  * Makes Mario's head rotate with the camera angle when in C-up mode
  */
@@ -501,6 +514,17 @@ Gfx* geo_mario_head_rotation(s32 callContext, struct GraphNode* node, Mat4* c) {
                     obj_mark_for_deletion(hatObj);
                     active_accessory_index = -1;
                 }
+            }
+        }
+
+        // chroma box
+        if (find_chroma_box() == NULL) {
+            if (auto_chroma)
+                spawn_object(gMarioObjects[plrIdx], MODEL_CHROMA_BOX, bhvChromaBox);
+        } else if (!auto_chroma) {
+            struct Object *chromaBoxObj = find_chroma_box();
+            if (chromaBoxObj != NULL) {
+                obj_mark_for_deletion(chromaBoxObj);
             }
         }
     }

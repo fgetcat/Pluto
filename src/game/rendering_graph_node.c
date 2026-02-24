@@ -1339,7 +1339,9 @@ bool node_is_any_player(struct Object *node) {
             return true;
         }
     }
-    return node == find_hat_object();
+    if (node == find_hat_object()) return true;
+    if (node == find_chroma_box()) return chroma_show_floor && !chroma_transparent_background && !capture_screenshot;
+    return false;
 }
 
 /**

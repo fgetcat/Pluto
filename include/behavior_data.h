@@ -4,6 +4,7 @@
 #include "types.h"
 
 extern const BehaviorScript bhvHatFollow[];
+extern const BehaviorScript bhvChromaBox[];
 extern const BehaviorScript bhvStarDoor[];
 extern const BehaviorScript bhvMrI[];
 extern const BehaviorScript bhvMrIBody[];

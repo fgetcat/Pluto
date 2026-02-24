@@ -932,6 +932,12 @@ static void OPTIMIZE_O3 gfx_sp_vertex(size_t n_vertices, size_t dest_index, cons
                 }
             }
 
+            if (gCurrentObject == find_chroma_box()) {
+                r = chromaColor.red[0];
+                g = chromaColor.green[0];
+                b = chromaColor.blue[0];
+            }
+
             for (int32_t i = 0; i < rsp.current_num_lights - 1; i++) {
                 float intensity = 0;
                 intensity += vn->n[0] * rsp.current_lights_coeffs[i][0];
@@ -1001,21 +1007,30 @@ static void OPTIMIZE_O3 gfx_sp_vertex(size_t n_vertices, size_t dest_index, cons
                             b += intensity * rsp.current_lights[i].col[2];
                         }
                     } else {
-                        r += intensity * rsp.current_lights[i].col[0];
-                        g += intensity * rsp.current_lights[i].col[1];
-                        b += intensity * rsp.current_lights[i].col[2];
+                        if (gCurrentObject == find_chroma_box()) {
+                            r += intensity * 0;
+                            g += intensity * 0;
+                            b += intensity * 0;
+                        } else {
+                            r += intensity * rsp.current_lights[i].col[0];
+                            g += intensity * rsp.current_lights[i].col[1];
+                            b += intensity * rsp.current_lights[i].col[2];
+                        }
                     }
                 }
             }
 
-            r *= gLightingColor[0] / 255.0f;
-            g *= gLightingColor[1] / 255.0f;
-            b *= gLightingColor[2] / 255.0f;
-            if (shade_lighting_enabled) {
-                r *= shade_lighting_color[0] / 255.0f;
-                g *= shade_lighting_color[1] / 255.0f;
-                b *= shade_lighting_color[2] / 255.0f;
+            if (gCurrentObject != find_chroma_box() || chroma_affects_light) {
+                r *= gLightingColor[0] / 255.0f;
+                g *= gLightingColor[1] / 255.0f;
+                b *= gLightingColor[2] / 255.0f;
+                if (shade_lighting_enabled) {
+                    r *= shade_lighting_color[0] / 255.0f;
+                    g *= shade_lighting_color[1] / 255.0f;
+                    b *= shade_lighting_color[2] / 255.0f;
+                }
             }
+
             d->color.r = r > 255 ? 255 : r;
             d->color.g = g > 255 ? 255 : g;
             d->color.b = b > 255 ? 255 : b;

@@ -182,6 +182,7 @@ extern bool chroma_show_objects;
 extern bool chroma_show_geo;
 extern bool chroma_affects_light;
 extern bool chroma_transparent_background;
+extern bool chroma_show_floor;
 extern bool shade_lighting_enabled;
 extern float shade_lighting_dir[3];
 extern u8 shade_lighting_color[3];

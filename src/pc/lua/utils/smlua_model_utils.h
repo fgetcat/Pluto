@@ -393,6 +393,7 @@ enum ModelExtendedId {
     E_MODEL_WARIOS_WINGED_METAL_CAP,
 
     E_MODEL_ACCESSORY,
+    E_MODEL_CHROMA_BOX,
 
     E_MODEL_MAX
 };

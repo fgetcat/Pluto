@@ -22,6 +22,8 @@ void cur_obj_spawn_strong_wind_particles(s32 windSpread, f32 scale, f32 relPosX,
 
 void bhv_hat_follow_init(void);
 void bhv_hat_follow_loop(void);
+void bhv_chroma_box_init(void);
+void bhv_chroma_box_loop(void);
 void bhv_cap_switch_loop(void);
 void bhv_tiny_star_particles_init(void);
 void bhv_grindel_thwomp_loop(void);

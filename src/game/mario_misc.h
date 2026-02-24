@@ -30,5 +30,6 @@ Gfx *geo_mirror_mario_backface_culling(s32 callContext, struct GraphNode *node, 
 Gfx* geo_mario_set_player_colors(s32 callContext, struct GraphNode* node, UNUSED Mat4* c);
 Gfx* geo_mario_cap_display_list(s32 callContext, struct GraphNode* node, UNUSED Mat4* c);
 struct Object *find_hat_object(void);
+struct Object *find_chroma_box(void);
 
 #endif // MARIO_MISC_H

@@ -326,6 +326,7 @@ static const void *sDynosBuiltinActors[] = {
     define_builtin(mad_piano_geo),
     define_builtin(manta_seg5_geo_05008D14),
     define_builtin(accessory_geo),
+    define_builtin(chroma_box_geo),
     define_builtin(mario_geo),
     define_builtin(marios_cap_geo),
     define_builtin(marios_metal_cap_geo),
@@ -1403,6 +1404,8 @@ static const void* sDynosBuiltinFuncs[] = {
     // Behaviors
     define_builtin(bhv_hat_follow_init),
     define_builtin(bhv_hat_follow_loop),
+    define_builtin(bhv_chroma_box_init),
+    define_builtin(bhv_chroma_box_loop),
     define_builtin(bhv_cap_switch_loop),
     define_builtin(bhv_tiny_star_particles_init),
     define_builtin(bhv_grindel_thwomp_loop),

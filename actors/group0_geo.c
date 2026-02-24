@@ -18,3 +18,4 @@
 #include "mario/geo.inc.c"
 
 #include "accessory/geo.inc.c"
+#include "chroma_box/geo.inc.c"

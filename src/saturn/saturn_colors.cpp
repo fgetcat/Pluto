@@ -46,6 +46,7 @@ bool chroma_show_objects;
 bool chroma_show_geo;
 bool chroma_affects_light;
 bool chroma_transparent_background;
+bool chroma_show_floor;
 
 bool shade_lighting_enabled;
 float shade_lighting_dir[3] = {0.0f, 0.0f, 0.0f};

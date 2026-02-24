@@ -27,3 +27,4 @@
 #include "sparkle_animation/model.inc.c"
 
 #include "accessory/model.inc.c"
+#include "chroma_box/model.inc.c"
