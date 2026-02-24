@@ -410,22 +410,25 @@ void* dynos_thread_func(void* arg) {
         usleep(10 * 1000);
         
         // Auto-reload models
-        if (configAutoReloadModels == true) {
-            if (CheckModelNeedsReload() && canBeReloaded) {
-                sprintf(status_text, "Reloading model %d ...", active_saturn_model_index);
-                dynos_pack_reset_and_regenerate();
-                    int old_powerup_state = switch_state_powerup;
-                    int old_vanish_transparency = vanish_transparency;
-                    switch_state_powerup = 2;
-                    vanish_transparency = 128;
-                dynos_gfx_init();
-                dynos_packs_init();
-                LoadModelData(active_saturn_model_index, true, false, true);
-                    switch_state_powerup = old_powerup_state;
-                    vanish_transparency = old_vanish_transparency;
-                canBeReloaded = ModelGeoBinExists(active_saturn_model_index);
-                status_text[0] = '\0';
-            }
+        if (CheckModelNeedsReload() || forceReload) {
+            if (active_saturn_model_index != -1) sprintf(status_text, "Reloading model %d ...", active_saturn_model_index);
+            else sprintf(status_text, "Reloading models ...");
+            // Reload DynOS Packs
+            dynos_pack_reset_and_regenerate();
+                int old_powerup_state = switch_state_powerup;
+                int old_vanish_transparency = vanish_transparency;
+                switch_state_powerup = 2;
+                vanish_transparency = 128;
+            dynos_gfx_init();
+            dynos_packs_init();
+            // Attempt to reload the active model
+            if (active_saturn_model_index != -1) LoadModelData(active_saturn_model_index, true, false, true);
+                switch_state_powerup = old_powerup_state;
+                vanish_transparency = old_vanish_transparency;
+            canBeReloaded = ModelGeoBinExists(active_saturn_model_index);
+            status_text[0] = '\0';
+            forceReload = false;
+            gfx_texture_cache_clear();
         }
         usleep(10 * 1000);
     }

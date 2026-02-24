@@ -61,6 +61,7 @@ extern "C" {
     extern bool CheckModelNeedsReload();
     extern bool ModelGeoBinExists(int);
     extern bool canBeReloaded;
+    extern bool forceReload;
 #ifdef __cplusplus
 }
 #endif

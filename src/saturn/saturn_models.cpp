@@ -71,6 +71,7 @@ int hat_rot[3] = {0, 0, 0};
 float hat_scale[3] = {1.f, 1.f, 1.f};
 
 bool canBeReloaded = false;
+bool forceReload = false;
 
 /* Update our CC Editor colors with our "defaultColor" values.
 This should be called when loading a CC, to insert our new colors into the editor. */
@@ -287,9 +288,22 @@ bool CheckModelNeedsReload() {
     if (!canBeReloaded) return false;
     if (active_saturn_model_index == -1) return false;
     PackData* pack = DynOS_Pack_GetFromIndex(active_saturn_model_index);
+
+    // If our folder was deleted, we need to reset everything
+    if (!std::filesystem::exists(std::filesystem::path(pack->mPath))) {
+        for (int i = 0; i < DynOS_Pack_GetCount(); i++) {
+            if (!IsSaturnModel(i)) continue;
+            LoadModelData(i, false, false, false);
+        }
+        active_saturn_model_index = -1;
+        active_accessory_index = -1;
+        return true;
+    }
+
+    if (!configAutoReloadModels) return false;
     if (!pack->mLoaded || !pack->mEnabled) return false;
 
-    // check if mario_geo.bin is missing
+    // Check if mario_geo.bin is missing
     if (!std::filesystem::exists(std::filesystem::path(pack->mPath + "/mario_geo.bin"))) {
         return true;
     }

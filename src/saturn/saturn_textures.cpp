@@ -220,8 +220,8 @@ void InitTextureData(int exp_index, int tex_index, int tile) {
                            &current_expressions[exp_index].Textures[tex_index].Preview);
 
         if (gTextureId == 0) gTextureId = gfx_get_current_rendering_api()->new_texture();
-        gfx_get_current_rendering_api()->select_texture(tile, gTextureId);
-        gfx_get_current_rendering_api()->set_sampler_parameters(tile, false, 0, 0);
+        gfx_get_current_rendering_api()->select_texture(tile+1, gTextureId);
+        gfx_get_current_rendering_api()->set_sampler_parameters(tile+1, false, 0, 0);
         gfx_get_current_rendering_api()->upload_texture(current_expressions[exp_index].Textures[tex_index].RawData,
                                                         current_expressions[exp_index].Textures[tex_index].Width,
                                                         current_expressions[exp_index].Textures[tex_index].Height);

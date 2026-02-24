@@ -183,11 +183,13 @@ void OpenModelExpressionSelector(PackData* pack) {
 
     // Eyes
     if (current_expressions[0].Name == "eyes") {
+        ImGui::BeginDisabled(current_expressions[0].Textures.size() <= 0);
         if (ImGui::Checkbox("Custom Eyes", &custom_eyes)) {
             // Swap switch state
             if (!custom_eyes) switch_state_eyes = 0;
             else if (switch_state_eyes <= 3 || switch_state_eyes == 8) switch_state_eyes = 4;
         }
+        ImGui::EndDisabled();
         OpenEyeSelector();
     }
 
@@ -524,12 +526,23 @@ static char model_search_term[256] = "";
 std::vector<std::pair<PackData*, bool>> model_packs;
 
 void OpenModelSelector() {
-    if (model_packs.size() <= 0) {
+    /*if (model_packs.size() <= 0 || forceReload) {
         model_packs.clear();
         for (int i = 0; i < DynOS_Pack_GetCount(); i++) {
             PackData* pack = DynOS_Pack_GetFromIndex(i);
             model_packs.push_back(std::make_pair(pack, IsAccessoryModel(i)));
         }
+    }*/
+
+    if (DynOS_Pack_GetCount() > model_packs.size()) {
+        for (int i = model_packs.size(); i < DynOS_Pack_GetCount(); i++) {
+            PackData* pack = DynOS_Pack_GetFromIndex(i);
+            model_packs.push_back(std::make_pair(pack, IsAccessoryModel(i)));
+        }
+    } else if (DynOS_Pack_GetCount() < model_packs.size()) {
+        model_packs.clear();
+        active_saturn_model_index = -1;
+        active_accessory_index = -1;
     }
 
     if (model_packs.size() <= 0) {
@@ -557,8 +570,16 @@ void OpenModelSelector() {
     if (DynOS_Pack_GetCount() >= 20) {
         ImGui::SetNextItemWidth(200);
         ImGui::InputTextWithHint("###model_packs_search", "Search models...", model_search_term, IM_ARRAYSIZE(model_search_term), ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_CharsLowercase);
-        ImGui::Separator();
     } else if (model_search_term != "") strcpy(model_search_term, "");
+
+    if (ImGui::SmallButton("Refresh###model_packs_refresh")) {
+        model_packs.clear();
+        active_saturn_model_index = -1;
+        active_accessory_index = -1;
+        gfx_texture_cache_clear();
+        forceReload = true;
+    }
+    ImGui::Separator();
 
     if (ImGui::BeginListBox("###model_packs_list", ImVec2(200, 200))) {
         for (int i = 0; i < model_packs.size(); i++) {
@@ -573,6 +594,7 @@ void OpenModelSelector() {
             if (model_search_term != "" && pack_search_meta.find(model_search_term) == std::string::npos) continue;
 
             ImGui::BeginDisabled(IsSaturnModel(i) && active_saturn_model_index != -1 && active_saturn_model_index != i);
+            ImGui::BeginDisabled(!std::filesystem::exists(std::filesystem::path(pack->mPath)));
             if (ImGui::Selectable(pack_id.c_str(), &pack->mEnabled)) {
                 // Toggle model
                 if (IsSaturnModel(i)) {
@@ -583,6 +605,7 @@ void OpenModelSelector() {
                 if (IsSaturnModel(i)) UpdateEditorLabels();
                 if (active_saturn_model_index == -1) custom_eyes = false;
             }
+            ImGui::EndDisabled();
             ImGui::EndDisabled();
             
             std::string popup_id = "###model_pack_popup_" + std::to_string(i);
