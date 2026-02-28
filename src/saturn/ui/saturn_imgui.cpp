@@ -267,12 +267,10 @@ void imgui_update() {
 
             // Machinima Camera
             if (ImGui::BeginMenu("Camera")) {
-                if (ImGui::MenuItem("Rule of Thirds", NULL, show_rule_of_thirds)) show_rule_of_thirds = !show_rule_of_thirds;
-                ImGui::Separator();
+                ImGui::PushItemWidth(150);
 
                 ImGui::Checkbox("Freeze Camera", &freeze_camera);
                 ImGui::BeginDisabled(!freeze_camera);
-                ImGui::PushItemWidth(150);
                 ImGui::SliderFloat("###freeze_camera_speed", &freeze_camera_speed, 0.f, 6.f, "Speed %.1f");
                 if (ImGui::IsItemHovered() && ImGui::IsMouseReleased(ImGuiMouseButton_Right))
                     freeze_camera_speed = 1.f;

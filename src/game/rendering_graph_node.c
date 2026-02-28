@@ -1355,6 +1355,7 @@ static void geo_process_object(struct Object *node) {
 
     // Chroma Key: Objects
     if (auto_chroma && !chroma_show_objects && !node_is_any_player(node)) return;
+    if (node == find_chroma_box() && !chroma_show_floor) return;
 
     struct Object* lastProcessingObject = gCurGraphNodeProcessingObject;
     struct MarioState* lastMarioState = gCurGraphNodeMarioState;
