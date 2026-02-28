@@ -22,9 +22,7 @@ extern "C" {
 
 bool freeze_camera;
 float freeze_camera_speed = 1.f;
-float camera_fov = 45.f;
 bool enable_hud;
-bool enable_shadows = true;
 bool enable_torso_rotation = true;
 int head_rotation[2] = { 0, 0 };
 bool enable_head_rotation;

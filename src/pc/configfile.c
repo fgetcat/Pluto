@@ -109,8 +109,9 @@ unsigned int configKeyPlutoFreezeCamera[MAX_BINDS]  = { 0x0021, 0x100b, VK_INVAL
 unsigned int configKeyPlutoHud[MAX_BINDS]           = { 0x003E, VK_INVALID, VK_INVALID };
 unsigned int configKeyPlutoPlayAnim[MAX_BINDS]      = { 0x0018, 0x100d, VK_INVALID };
 unsigned int configKeyPlutoPauseAnim[MAX_BINDS]     = { 0x0019, 0x100e, VK_INVALID };
-unsigned int configKeyPlutoCreateDialog[MAX_BINDS] = { 0x003f, VK_INVALID, VK_INVALID };
+unsigned int configKeyPlutoCreateDialog[MAX_BINDS] = { VK_INVALID, VK_INVALID, VK_INVALID };
 unsigned int configKeyPlutoFlushTextures[MAX_BINDS] = { 0x0057, VK_INVALID, VK_INVALID };
+unsigned int configKeyPlutoRuleOfThirds[MAX_BINDS] = { 0x003F, VK_INVALID, VK_INVALID };
 unsigned int configStickDeadzone = 16; // 16*DEADZONE_STEP=4960 (the original default deadzone)
 unsigned int configRumbleStrength = 50;
 // better camera settings
@@ -180,6 +181,9 @@ bool         configGlobalPlayerModels             = true;
 char         configLastVersion[MAX_CONFIG_STRING] = SM64COOPDX_VERSION;
 bool configAutoReloadModels = false;
 
+bool configPlutoShadows = true;
+unsigned int configPlutoCameraFov = 45;
+
 static const struct ConfigOption options[] = {
     {.name = "fullscreen",                     .type = CONFIG_TYPE_BOOL, .boolValue = &configWindow.fullscreen},
     //{.name = "window_x",                       .type = CONFIG_TYPE_UINT, .uintValue = &configWindow.x},
@@ -230,6 +234,7 @@ static const struct ConfigOption options[] = {
     {.name = "key_pluto_pause_anim",           .type = CONFIG_TYPE_BIND, .uintValue = configKeyPlutoPauseAnim},
     {.name = "key_pluto_create_dialog",        .type = CONFIG_TYPE_BIND, .uintValue = configKeyPlutoCreateDialog},
     {.name = "key_pluto_flush_textures",       .type = CONFIG_TYPE_BIND, .uintValue = configKeyPlutoFlushTextures},
+    {.name = "key_pluto_rule_of_thirds",       .type = CONFIG_TYPE_BIND, .uintValue = configKeyPlutoRuleOfThirds},
 
     {.name = "stick_deadzone",                 .type = CONFIG_TYPE_UINT, .uintValue = &configStickDeadzone},
     {.name = "rumble_strength",                .type = CONFIG_TYPE_UINT, .uintValue = &configRumbleStrength},
@@ -312,7 +317,9 @@ static const struct ConfigOption options[] = {
     {.name = "djui_theme_center",              .type = CONFIG_TYPE_BOOL  , .boolValue   = &configDjuiThemeCenter},
     {.name = "djui_scale",                     .type = CONFIG_TYPE_UINT  , .uintValue   = &configDjuiScale},
     {.name = "last_version",                   .type = CONFIG_TYPE_STRING, .stringValue = (char*)&configLastVersion, .maxStringLength = MAX_CONFIG_STRING},
-    {.name = "auto_reload_models",            .type = CONFIG_TYPE_BOOL  , .boolValue   = &configAutoReloadModels},
+    {.name = "auto_reload_models",             .type = CONFIG_TYPE_BOOL  , .boolValue   = &configAutoReloadModels},
+    {.name = "enable_shadows",                 .type = CONFIG_TYPE_BOOL  , .boolValue   = &configPlutoShadows},
+    {.name = "camera_fov",                     .type = CONFIG_TYPE_UINT  , .uintValue   = &configPlutoCameraFov},
 };
 
 // FunctionConfigOption functions

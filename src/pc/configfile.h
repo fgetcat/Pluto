@@ -70,6 +70,7 @@ extern unsigned int configKeyPlutoPlayAnim[];
 extern unsigned int configKeyPlutoPauseAnim[];
 extern unsigned int configKeyPlutoCreateDialog[];
 extern unsigned int configKeyPlutoFlushTextures[];
+extern unsigned int configKeyPlutoRuleOfThirds[];
 extern unsigned int configStickDeadzone;
 extern unsigned int configRumbleStrength;
 extern unsigned int configGamepadNumber;
@@ -136,6 +137,8 @@ extern bool         configCoopCompatibility;
 extern bool         configGlobalPlayerModels;
 extern char         configLastVersion[];
 extern bool         configAutoReloadModels;
+extern bool         configPlutoShadows;
+extern unsigned int configPlutoCameraFov;
 
 void enable_queued_mods();
 void configfile_load(void);

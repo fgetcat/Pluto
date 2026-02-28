@@ -17,10 +17,8 @@ extern "C" {
     extern bool freeze_camera;
     extern float freeze_camera_speed;
     int saturn_camera_update();
-    extern float camera_fov;
 
     extern bool enable_hud;
-    extern bool enable_shadows;
     extern bool enable_torso_rotation;
     extern bool enable_head_rotation;
     extern int head_rotation[2];

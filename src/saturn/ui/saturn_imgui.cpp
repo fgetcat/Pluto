@@ -163,6 +163,9 @@ void imgui_handle_binds(int scancode) {
                 smlua_text_utils_dialog_replace(DIALOG_CUSTOM,1,6,30,200, uiDialogText);
                 create_dialog_box(DIALOG_CUSTOM);
             }
+
+            if (scancode == (int)configKeyPlutoRuleOfThirds[i])
+                show_rule_of_thirds = !show_rule_of_thirds;
         }
     }
 }
@@ -274,9 +277,10 @@ void imgui_update() {
                 if (ImGui::IsItemHovered() && ImGui::IsMouseReleased(ImGuiMouseButton_Right))
                     freeze_camera_speed = 1.f;
                 ImGui::EndDisabled();
-                ImGui::SliderFloat("###camera_fov", &camera_fov, 0.f, 100.f, "FOV %.1f");
+                ImGui::SliderInt("###camera_fov", (int*)&configPlutoCameraFov, 0, 100, "FOV %d");
                 if (ImGui::IsItemHovered() && ImGui::IsMouseReleased(ImGuiMouseButton_Right))
-                    camera_fov = 45.f;
+                    configPlutoCameraFov = 45;
+
                 ImGui::PopItemWidth();
                 ImGui::EndMenu();
             }
@@ -494,7 +498,7 @@ void imgui_hud() {
         vec3f_copy(pos, gMarioStates[i].marioObj->header.gfx.pos);
         if (djui_hud_world_pos_to_screen_pos(pos, out)) {
             float dist = vec3f_dist(gLakituState.pos, gMarioStates[i].pos);
-            float size = marioScaleX * (45.f / camera_fov) * 7.5f * 7000.f / dist;
+            float size = marioScaleX * (45.f / configPlutoCameraFov) * 7.5f * 7000.f / dist;
 
             player_windows[i].active = dist < 2500.f;
             if (!player_windows[i].active) continue;

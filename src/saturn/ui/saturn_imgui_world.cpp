@@ -197,5 +197,5 @@ void OpenQuickOptions() {
 
     // Quick Options
     //ImGui::Checkbox("HUD", &enable_hud);
-    ImGui::Checkbox("Shadows", &enable_shadows);
+    ImGui::Checkbox("Shadows", &configPlutoShadows);
 }

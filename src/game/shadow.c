@@ -924,7 +924,7 @@ Gfx *create_shadow_hardcoded_rectangle(f32 xPos, f32 yPos, f32 zPos, UNUSED s16 
 Gfx *create_shadow_below_xyz(f32 xPos, f32 yPos, f32 zPos, s16 shadowScale, u8 shadowSolidity,
                              s8 shadowType) {
 
-    if (!enable_shadows) return NULL;
+    if (!configPlutoShadows) return NULL;
 
     Gfx *displayList = NULL;
     struct Surface *pfloor;
