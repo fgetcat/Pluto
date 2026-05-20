@@ -23,6 +23,8 @@
 #include "pc/djui/djui_console.h"
 #include "data/dynos.cpp.h"
 
+extern "C" { void wiggle_reset_all(void); }
+
 float marioScaleX = 1.0f;
 float marioScaleY = 1.0f;
 float marioScaleZ = 1.0f;
@@ -193,9 +195,41 @@ bool ModelGeoBinExists(int index) {
     return std::filesystem::exists(std::filesystem::path(pack->mPath + "/mario_geo.bin"));
 }
 
+static void RefreshPackMetadata(PackData* pack) {
+    namespace fs = std::filesystem;
+    fs::path packPath(std::string(pack->mPath.c_str()));
+    if (!fs::is_directory(packPath)) return;
+
+    for (auto& entry : fs::directory_iterator(packPath)) {
+        if (!entry.is_directory()) continue;
+        fs::path metaPath = entry.path() / "meta.txt";
+        if (!fs::exists(metaPath)) continue;
+
+        std::ifstream file(metaPath);
+        if (!file.is_open()) continue;
+
+        auto trimRight = [](std::string s) -> std::string {
+            size_t end = s.find_last_not_of(" \t\r\n");
+            return (end == std::string::npos) ? "" : s.substr(0, end + 1);
+        };
+
+        std::string line;
+        while (std::getline(file, line)) {
+            if (line.compare(0, 5, "Name ") == 0)
+                pack->mModelName = String(trimRight(line.substr(5)).c_str());
+            else if (line.compare(0, 7, "Author ") == 0)
+                pack->mModelAuthor = String(trimRight(line.substr(7)).c_str());
+            else if (line.compare(0, 8, "Version ") == 0)
+                pack->mModelVersion = String(trimRight(line.substr(8)).c_str());
+        }
+        return; // only read the first meta.txt found
+    }
+}
+
 /* Loads Saturn model data at a given DynOS index. */
 void LoadModelData(int index, bool enabled, bool first_use, bool auto_reload) {
     PackData* pack = DynOS_Pack_GetFromIndex(index);
+    RefreshPackMetadata(pack);
     if (first_use && enabled && IsAccessoryModel(index)) {
         DynOS_Pack_SetEnabled(pack, false);
         return;
@@ -282,11 +316,13 @@ void LoadModelData(int index, bool enabled, bool first_use, bool auto_reload) {
             }
             SetActiveBoneNames(boneNames);
             LoadBoneFlagsFromPackDir(pack->mPath);
+            wiggle_reset_all();
         }
         else {
             active_saturn_model_index = -1;
             active_accessory_index = -1;
             ResetBoneFlagsInMemory();
+            wiggle_reset_all();
         }
     }
 }
