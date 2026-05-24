@@ -13,24 +13,27 @@ int timeline_position;
 bool timeline_is_playing;
 static int prev_position;
 
-bool TimelineButton(std::string name, float* ptr) {
+bool TimelineButton(std::string name, float* ptr, bool lock_interpolation) {
     return TimelineButton<float>(name, ptr,
         [](float* out, float* a, float* b, float x) { *out = (*b - *a) * x + *a; },
-        [](float* value) { ImGui::BeginTooltip(); ImGui::Text("%.3f", *value); ImGui::EndTooltip(); }
+        [](float* value) { ImGui::BeginTooltip(); ImGui::Text("%.3f", *value); ImGui::EndTooltip(); },
+        lock_interpolation
     );
 }
 
-bool TimelineButton(std::string name, int* ptr) {
+bool TimelineButton(std::string name, int* ptr, bool lock_interpolation) {
     return TimelineButton<int>(name, ptr,
         [](int* out, int* a, int* b, float x) { *out = (*b - *a) * x + *a; },
-        [](int* value) { ImGui::BeginTooltip(); ImGui::Text("%d", *value); ImGui::EndTooltip(); }
+        [](int* value) { ImGui::BeginTooltip(); ImGui::Text("%d", *value); ImGui::EndTooltip(); },
+        lock_interpolation
     );
 }
 
 bool TimelineButton(std::string name, bool* ptr) {
     return TimelineButton<bool>(name, ptr,
         [](bool* out, bool* a, bool* b, float x) { *out = x < 1 ? *a : *b; },
-        [](bool* value) { ImGui::BeginTooltip(); ImGui::Checkbox("##preview_checkbox", value); ImGui::EndTooltip(); }
+        [](bool* value) { ImGui::BeginTooltip(); ImGui::Checkbox("##preview_checkbox", value); ImGui::EndTooltip(); },
+        true
     );
 }
 
@@ -50,6 +53,7 @@ bool TimelineButton(std::string name, Timeline timeline) {
     if (it == timelines.end()) {
         // add a starting keyframe
         Keyframe start = Keyframe();
+        if (timeline.lock_interpolation) start.interp_power = 0;
         memcpy(start.get(timeline.size), timeline.ptr, timeline.size); // use the current value
         timeline.keyframes.push_back(start);
         timelines.insert({ name, timeline });
@@ -60,6 +64,7 @@ bool TimelineButton(std::string name, Timeline timeline) {
 }
 
 static float PowerTransform(float x, float power, InterpolationType type) {
+    if (power == 0) return 0;
     switch (type) {
         case In: x = powf(x, power); break;
         case Out: x = 1 - powf(1 - x, power); break;
@@ -126,6 +131,7 @@ void UpdateTimelines() {
                 timeline.keyframes.push_back(Keyframe());
                 kf = &timeline.keyframes.back();
                 kf->position = timeline_position;
+                if (timeline.lock_interpolation) kf->interp_power = 0;
                 memcpy(kf->get(timeline.size), timeline.ptr, timeline.size);
 
                 SortKeyframes(timeline.keyframes);
@@ -140,7 +146,7 @@ void UpdateTimelines() {
 void RenderTimelineWidget() {
     static int start = 0, end = 60;
     static std::vector<Keyframe*> selected_keyframes;
-    static std::vector<Keyframe>* keyframe_vector;
+    static Timeline* selected_timeline;
     bool open_popup = false;
 
     if (ImGui::BeginPopup("##keyframe_menu")) {
@@ -163,21 +169,28 @@ void RenderTimelineWidget() {
         if (ImGui::MenuItem("Delete")) {
             for (Keyframe* kf : selected_keyframes)
                 kf->position = -1;
-            keyframe_vector->erase(std::remove_if(
-                keyframe_vector->begin(), keyframe_vector->end(),
+            selected_timeline->keyframes.erase(std::remove_if(
+                selected_timeline->keyframes.begin(), selected_timeline->keyframes.end(),
                 [](Keyframe& x) { return x.position == -1; }
-            ), keyframe_vector->end());
+            ), selected_timeline->keyframes.end());
         }
         ImGui::MenuItem("Close");
         ImGui::SeparatorText("Interpolation");
         ImGui::PushItemFlag(ImGuiItemFlags_SelectableDontClosePopup, true);
+        ImGui::BeginDisabled(selected_timeline->lock_interpolation);
         if (ImGui::MenuItem("In", nullptr, interp == In)) modify([&](Keyframe* kf) { interp = kf->interp_type = In; });
         if (ImGui::MenuItem("Out", nullptr, interp == Out)) modify([&](Keyframe* kf) { interp = kf->interp_type = Out; });
         if (ImGui::MenuItem("InOut", nullptr, interp == InOut)) modify([&](Keyframe* kf) { interp = kf->interp_type = InOut; });
+        ImGui::EndDisabled();
         ImGui::PopItemFlag();
         ImGui::Separator();
-        if (ImGui::SliderFloat("Power", power, 0, 4, unk_power ? "???" : "%.3f"))
-            modify([&](Keyframe* kf) { unk_power = false; kf->interp_power = *power; });
+        ImGui::BeginDisabled(selected_timeline->lock_interpolation);
+        if (ImGui::SliderFloat("Power", power, 0, 4,
+            selected_timeline->lock_interpolation
+                ? "Interpolation Disabled"
+                : unk_power ? "???" : "%.3f"
+        )) modify([&](Keyframe* kf) { unk_power = false; kf->interp_power = *power; });
+        ImGui::EndDisabled();
 
         // draw the interpolation graph
         float values[101];
@@ -213,7 +226,7 @@ void RenderTimelineWidget() {
                 if (prev_kfpos != kf.position) updated = true;
 
                 if (ImGui::IsNeoKeyframeRightClicked()) {
-                    keyframe_vector = &timeline.keyframes;
+                    selected_timeline = &timeline;
                     selected_keyframes.clear();
                     selected_keyframes.push_back(&kf);
                     ImGui::FrameIndexType selected[ImGui::GetNeoKeyframeSelectionSize()];

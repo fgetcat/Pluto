@@ -86,6 +86,7 @@ public:
 struct Timeline {
     void* ptr;
     size_t size;
+    bool lock_interpolation;
     Interpolate interpolate;
     Compare compare;
     OnHover on_hover;
@@ -99,17 +100,17 @@ extern bool timeline_is_playing;
 
 bool TimelineButton(std::string name, Timeline timeline);
 
-template<typename T> bool TimelineButton(std::string name, T* ptr, std::function<void(T*, T*, T*, float)> interpolate, std::function<void(T*)> on_hover = nullptr) {
+template<typename T> bool TimelineButton(std::string name, T* ptr, std::function<void(T*, T*, T*, float)> interpolate, std::function<void(T*)> on_hover = nullptr, bool lock_interpolation = false) {
     return TimelineButton(name, (Timeline){
-        (void*)ptr, sizeof(T),
+        (void*)ptr, sizeof(T), lock_interpolation,
         [=](void* out, void* a, void* b, float x) { return interpolate((T*)out, (T*)a, (T*)b, x); },
         [=](void* a, void* b) { return *(T*)a == *(T*)b; },
         [=](void* value) { on_hover((T*)value); }
     });
 }
 
-bool TimelineButton(std::string name, float* ptr);
-bool TimelineButton(std::string name, int* ptr);
+bool TimelineButton(std::string name, float* ptr, bool lock_interpolation = false);
+bool TimelineButton(std::string name, int* ptr, bool lock_interpolation = false);
 bool TimelineButton(std::string name, bool* ptr);
 
 void RenderTimelineWidget();
