@@ -19,6 +19,7 @@
 bool is_wayland() {
 #if defined(__MINGW32__) || defined(OSX_BUILD)
     return false;
+    
 #else
     return getenv("WAYLAND_DISPLAY");
 #endif
@@ -29,6 +30,7 @@ bool is_wayland() {
 
 #include <stb/stb_image_write.h>
 
+#include "saturn/saturn_keyframe.h"
 #include "saturn/ui/saturn_imgui_colors.h"
 #include "saturn/ui/saturn_imgui_models.h"
 #include "saturn/ui/saturn_imgui_world.h"
@@ -74,6 +76,7 @@ bool show_window_model_settings = false;
 bool show_window_animations = true;
 bool saturn_any_bone_dot_hovered = false;
 bool show_window_dialog = false;
+bool show_window_timeline = false;
 
 char status_text[256] = { 0 };
 
@@ -174,6 +177,8 @@ void imgui_handle_binds(int scancode) {
 }
 
 void imgui_update() {
+    UpdateTimelines();
+
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplSDL2_NewFrame(current_window);
     ImGui::NewFrame();
@@ -232,7 +237,7 @@ void imgui_update() {
                 // WIP: Currently only works for player 1
                 if (player_windows[0].active && player_windows[0].hovered &&
                 AnyModelsEnabled() && active_saturn_model_index != -1) {
-                    if ((ImGui::IsMouseReleased(1)) && !ImGui::IsAnyItemHovered() && !saturn_any_bone_dot_hovered)
+                    if ((ImGui::IsMouseReleased(1)) && !ImGui::IsAnyItemHovered() && !saturn_any_bone_dot_hovered && !ImGui::GetIO().WantCaptureMouse)
                         OpenModelSettingsAtCursor();
                 }
             }
@@ -260,6 +265,7 @@ void imgui_update() {
                 if (ImGui::MenuItem("Color Code Editor", NULL, show_window_cc_editor)) show_window_cc_editor = !show_window_cc_editor;
                 if (ImGui::MenuItem("Animation", NULL, show_window_animations, freeze_camera)) show_window_animations = !show_window_animations;
                 if (ImGui::MenuItem("Textbox", NULL, show_window_dialog)) show_window_dialog = !show_window_dialog;
+                if (ImGui::MenuItem("Timeline", NULL, show_window_timeline)) show_window_timeline = !show_window_timeline;
                 ImGui::EndMenu();
             }
 
@@ -367,6 +373,20 @@ void imgui_update() {
                 smlua_text_utils_dialog_replace(DIALOG_CUSTOM,1,6,30,200, uiDialogText);
                 create_dialog_box(DIALOG_CUSTOM);
             }
+            ImGui::End();
+        }
+
+        // Timeline
+        if (show_window_timeline) {
+            ImGui::Begin("Timeline", &show_window_timeline);
+            RenderTimelineWidget();
+            ImGui::End();
+
+            static float value = 0;
+            ImGui::Begin("Test", &show_window_timeline, ImGuiWindowFlags_AlwaysAutoResize);
+            ImGui::DragFloat("Value", &value);
+            ImGui::SameLine();
+            TimelineButton("Value", &value);
             ImGui::End();
         }
     }
