@@ -239,6 +239,7 @@ void RenderTimelineWidget() {
                 sel_tl.keyframes.begin(), sel_tl.keyframes.end(),
                 [](Keyframe& x) { return x.position == -1; }
             ), sel_tl.keyframes.end());
+            prev_position = -1;
         }
         ImGui::MenuItem("Close");
         ImGui::Checkbox("Pause Playback", &selected_keyframes[0]->pause_playback);
@@ -279,12 +280,18 @@ void RenderTimelineWidget() {
     if (ImGui::Button("|<")) { timeline_is_playing = false; timeline_position = 0; }
     ImGui::SameLine();
     ImGui::Checkbox("Loop", &timeline_loop);
+    ImGui::SameLine();
+    if (ImGui::Button(">|")) { timeline_is_playing = false; timeline_position = timeline_end; }
+    ImGui::SameLine(); ImGui::Dummy({ 5, 0 }); ImGui::SameLine();
+    ImGui::TextDisabled("frame %d", timeline_position);
 
-    if (ImGui::BeginNeoSequencer("Sequencer", &timeline_position, &start, &timeline_end, ImGui::GetWindowSize(),
+    if (ImGui::BeginNeoSequencer("Sequencer", &timeline_position, &start, &timeline_end, ImGui::GetContentRegionAvail(),
         ImGuiNeoSequencerFlags_EnableSelection |
         ImGuiNeoSequencerFlags_AllowLengthChanging |
         ImGuiNeoSequencerFlags_Selection_EnableDragging |
-        ImGuiNeoSequencerFlags_Selection_EnableDeletion
+        ImGuiNeoSequencerFlags_Selection_EnableDeletion |
+        (timeline_is_playing ? ImGuiNeoSequencerFlags_AutoScrollToFrame : 0),
+        60
     )) {
         for (auto& tl_pair : timelines) {
             if (!ImGui::BeginNeoTimelineEx(tl_pair.first.c_str())) continue;
@@ -313,6 +320,11 @@ void RenderTimelineWidget() {
                 }
                 if (ImGui::IsNeoKeyframeHovered()) {
                     if (timeline.on_hover) timeline.on_hover(kf.get(timeline.size));
+
+                    if (ImGui::IsMouseDoubleClicked(0)) {
+                        timeline_position = kf.position;
+                        updated = true;
+                    }
                 }
             }
             if (right_clicked_kf_pos >= 0) {

@@ -379,17 +379,21 @@ void OpenAnimationsMenu() {
     ImGui::Separator();
     ImGui::BeginDisabled(is_editing_panim);
         ImGui::BeginDisabled(!override_anim);
-            if (enable_custom_anim && override_anim) ImGui::TextWrapped("Now Playing: %s", current_pluto_anim.Name.c_str());
-            else ImGui::TextWrapped("Now Playing: %s", saturn_animations[gMarioStates[0].marioObj->header.gfx.animInfo.animID]);
-            ImGui::BeginDisabled(!pause_anim || anim_sync_to_timeline);
-                ImGui::SliderInt("###animation_frame", &paused_frame, gMarioStates[0].marioObj->header.gfx.animInfo.curAnim->loopStart, gMarioStates[0].marioObj->header.gfx.animInfo.curAnim->loopEnd-1, "frame %d", ImGuiSliderFlags_AlwaysClamp);
+            ImGui::BeginDisabled(anim_sync_to_timeline);
+                if (enable_custom_anim && override_anim) ImGui::TextWrapped("Now Playing: %s", current_pluto_anim.Name.c_str());
+                else ImGui::TextWrapped("Now Playing: %s", saturn_animations[gMarioStates[0].marioObj->header.gfx.animInfo.animID]);
+                ImGui::BeginDisabled(!pause_anim);
+                    ImGui::SliderInt("###animation_frame", &paused_frame, gMarioStates[0].marioObj->header.gfx.animInfo.curAnim->loopStart, gMarioStates[0].marioObj->header.gfx.animInfo.curAnim->loopEnd-1, "frame %d", ImGuiSliderFlags_AlwaysClamp);
+                ImGui::EndDisabled();
+                if (ImGui::Checkbox("Paused", &pause_anim))
+                    if (!pause_anim) hang_anim = false;
+
+                ImGui::SameLine(); ImGui::Checkbox("Hang", &hang_anim);
+                ImGui::BeginDisabled(hang_anim);
+                    ImGui::SameLine(); ImGui::Checkbox("Loop", &loop_anim);
             ImGui::EndDisabled();
-            if (ImGui::Checkbox("Paused", &pause_anim))
-                if (!pause_anim) hang_anim = false;
-        ImGui::EndDisabled();
-        ImGui::SameLine(); ImGui::Checkbox("Hang", &hang_anim);
-        ImGui::BeginDisabled(hang_anim);
-            ImGui::SameLine(); ImGui::Checkbox("Loop", &loop_anim);
+            
+            ImGui::EndDisabled();
         ImGui::EndDisabled();
     ImGui::EndDisabled();
 

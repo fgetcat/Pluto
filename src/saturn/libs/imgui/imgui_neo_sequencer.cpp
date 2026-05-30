@@ -66,6 +66,9 @@ namespace ImGui
         ImVec4 CurrentFrameColor; // Color of current frame, we have to save it because we render on EndNeoSequencer, but process at BeginneoSequencer
 
         bool HoldingZoomSlider = false;
+        bool EditingZoom = false;
+        bool EditingZoomNeedsFocus = false;
+        int ZoomEditValue = 60;
 
         //Selection
         ImVector<ImGuiID> Selection; // Contains ids of keyframes
@@ -171,7 +174,7 @@ namespace ImGui
 
         if (context.HoldingCurrentFrame)
         {
-            if (IsMouseDragging(ImGuiMouseButton_Left, 0.0f))
+            if (IsMouseDragging(ImGuiMouseButton_Left, 0.0f) && !IsAnyItemActive() && !context.HoldingZoomSlider)
             {
                 const auto mousePosX = GetMousePos().x;
                 const auto v = mousePosX - timelineXRange.x;// Subtract min
@@ -199,7 +202,8 @@ namespace ImGui
         }
 
         if (IsMouseHoveringRect(context.TopBarStartCursor, context.TopBarStartCursor + context.TopBarSize) &&
-            IsMouseDown(ImGuiMouseButton_Left) && !context.HoldingCurrentFrame && context.StateOfSelection == SelectionState::Idle)
+            IsMouseDown(ImGuiMouseButton_Left) && !context.HoldingCurrentFrame && context.StateOfSelection == SelectionState::Idle &&
+            !IsAnyItemActive() && !context.HoldingZoomSlider)
         {
             context.HoldingCurrentFrame = true;
             context.CurrentFrameColor = GetStyleNeoSequencerColorVec4(ImGuiNeoSequencerCol_FramePointerPressed);
@@ -533,7 +537,7 @@ namespace ImGui
         //    endFrameVal = (int32_t) *end;
 
         if (endFrameVal <= startFrameVal)
-            endFrameVal = (int32_t) *end;
+            endFrameVal = startFrameVal + 1;
 
         *start = startFrameVal;
         *end = endFrameVal;
@@ -578,7 +582,7 @@ namespace ImGui
 
         const bool hovered = ItemHoverable(bb, GetCurrentWindow()->GetID("##zoom_slider"), ImGuiItemFlags_None);
 
-        if (hovered)
+        if (hovered && !context.HoldingCurrentFrame)
         {
             SetKeyOwner(ImGuiKey_MouseWheelY, GetItemID());
             const float currentScroll = GetIO().MouseWheel;
@@ -628,9 +632,16 @@ namespace ImGui
             }
         }
 
-        if (hovered && IsMouseDown(ImGuiMouseButton_Left))
+        if (hovered && IsMouseDown(ImGuiMouseButton_Left) && !context.EditingZoom)
         {
             context.HoldingZoomSlider = true;
+        }
+
+        if (hovered && IsMouseClicked(ImGuiMouseButton_Left) && IsKeyDown(ImGuiMod_Ctrl)) {
+            context.HoldingZoomSlider = false;
+            context.EditingZoom = true;
+            context.EditingZoomNeedsFocus = true;
+            context.ZoomEditValue = (int)viewWidth;
         }
 
 
@@ -642,6 +653,24 @@ namespace ImGui
 
         if (res)
         {
+            if (context.EditingZoom) {
+                // CUSTOM INPUT INT BABY LETS GO
+                SetNextItemWidth(bb.GetWidth());
+                SetCursorScreenPos(bb.Min);
+                PushID("##zoom_edit_input");
+                if (context.EditingZoomNeedsFocus) { SetKeyboardFocusHere(); context.EditingZoomNeedsFocus = false; }
+                bool confirmed = InputInt("##zoom_val", &context.ZoomEditValue, 0, 0, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll);
+                bool lostFocus = IsItemDeactivated() && !confirmed;
+                PopID();
+                if (confirmed || lostFocus) {
+                    if (context.ZoomEditValue < 30) context.ZoomEditValue = 30;
+                    if (context.ZoomEditValue > 120) context.ZoomEditValue = 120;
+                    context.Zoom = ImMax(1.0f, (float)totalFrames / (float)context.ZoomEditValue);
+                    context.EditingZoom = false;
+                }
+            }
+            else
+            {
             auto sliderColor = GetStyleNeoSequencerColorVec4(ImGuiNeoSequencerCol_ZoomBarSlider);
 
             if (IsItemHovered())
@@ -661,6 +690,7 @@ namespace ImGui
             const auto overlaySize = CalcTextSize(overlayTextBuffer);
 
             drawList->AddText(sliderCenter - overlaySize / 2.0f, IM_COL32_WHITE, overlayTextBuffer);
+            }
         }
     }
 
@@ -865,10 +895,11 @@ namespace ImGui
     bool
     BeginNeoSequencer(const char* idin, FrameIndexType* frame, FrameIndexType* startFrame, FrameIndexType* endFrame,
                       const ImVec2& size,
-                      ImGuiNeoSequencerFlags flags)
+                      ImGuiNeoSequencerFlags flags, int framesPerView)
     {
         IM_ASSERT(!inSequencer && "Called when while in other NeoSequencer, that won't work, call End!");
-        IM_ASSERT(*startFrame < *endFrame && "Start frame must be smaller than end frame");
+        // crash, whats the point of an assert when u can just fix the damn problem
+        if (*endFrame <= *startFrame) *endFrame = *startFrame + 1;
 
         static char childNameStorage[64];
         snprintf(childNameStorage, sizeof(childNameStorage), "##%s_child_wrapper", idin);
@@ -959,6 +990,25 @@ namespace ImGui
         if (showZoom)
             processAndRenderZoom(context, context.TopLeftCursor, flags & ImGuiNeoSequencerFlags_AllowLengthChanging,
                                  startFrame, endFrame);
+
+        if (framesPerView > 0) {
+            const float totalFrames = (float)(*endFrame - *startFrame);
+            const int clampedView = ImClamp(framesPerView, 30, 120);
+            const float minZoom = ImMax(1.0f, totalFrames / (float)clampedView);
+            context.Zoom = ImMax(context.Zoom, minZoom);
+        }
+
+        if (flags & ImGuiNeoSequencerFlags_AutoScrollToFrame) {
+            const FrameIndexType totalFrames = *endFrame - *startFrame;
+            const FrameIndexType viewWidth = (FrameIndexType)ceilf((float)totalFrames / context.Zoom);
+            const FrameIndexType viewStart = *startFrame + context.OffsetFrame;
+            const FrameIndexType viewEnd   = viewStart + viewWidth;
+            if (*frame < viewStart || *frame >= viewEnd) {
+                // snap to the page that contains the current frame
+                FrameIndexType newOffset = ((*frame - *startFrame) / viewWidth) * viewWidth;
+                context.OffsetFrame = (FrameIndexType)ImClamp((int)newOffset, 0, (int)(totalFrames - viewWidth));
+            }
+        }
 
         if (context.Size.y < context.FilledHeight)
             context.Size.y = context.FilledHeight;

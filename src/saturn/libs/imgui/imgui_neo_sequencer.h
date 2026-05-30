@@ -28,6 +28,7 @@ enum ImGuiNeoSequencerFlags_
     ImGuiNeoSequencerFlags_Selection_EnableDragging = 1 << 5,
     ImGuiNeoSequencerFlags_Selection_EnableDeletion = 1 << 6,
 
+    ImGuiNeoSequencerFlags_AutoScrollToFrame        = 1 << 7, // Auto-scroll
 };
 
 // Flags for ImGui::BeginNeoTimeline()
@@ -107,7 +108,7 @@ namespace ImGui {
     IMGUI_API void PushNeoSequencerStyleColor(ImGuiNeoSequencerCol idx, const ImVec4& col);
     IMGUI_API void PopNeoSequencerStyleColor(int count = 1);
 
-    IMGUI_API bool BeginNeoSequencer(const char* id, FrameIndexType * frame, FrameIndexType * startFrame, FrameIndexType * endFrame,const ImVec2& size = ImVec2(0, 0),ImGuiNeoSequencerFlags flags = ImGuiNeoSequencerFlags_None);
+    IMGUI_API bool BeginNeoSequencer(const char* id, FrameIndexType * frame, FrameIndexType * startFrame, FrameIndexType * endFrame,const ImVec2& size = ImVec2(0, 0),ImGuiNeoSequencerFlags flags = ImGuiNeoSequencerFlags_None, int framesPerView = 0);
     IMGUI_API void EndNeoSequencer(); //Call only when BeginNeoSequencer() returns true!!
 
     IMGUI_API bool BeginNeoGroup(const char* label, bool* open = nullptr);

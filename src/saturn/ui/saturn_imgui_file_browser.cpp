@@ -237,7 +237,7 @@ void saturn_file_browser_tools(std::string id, bool search, int exp_index) {
     }
     ImGui::SameLine();
     if (exp_index >= 0 && exp_index < (int)current_expressions.size()) {
-        TimelineButton("Expr_" + current_expressions[exp_index].Name, &current_expressions[exp_index].CurrentIndex, true);
+        TimelineButton(current_expressions[exp_index].Name, &current_expressions[exp_index].CurrentIndex, true);
     } else if (exp_index == -1) {
         if (browser_timeline_index.find(id) == browser_timeline_index.end())
             browser_timeline_index[id] = 0;
