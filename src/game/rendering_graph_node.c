@@ -289,7 +289,11 @@ void patch_mtx_interpolated(f32 delta) {
         if (!interp->gfx) { continue; }
         gShadowInterpCurrent = interp;
         Vec3f posInterp;
-        delta_interpolate_vec3f(posInterp, interp->shadowPosPrev, interp->shadowPos, delta);
+        if (configInterpolationMode == 2) {
+            vec3f_copy(posInterp, interp->shadowPos);
+        } else {
+            delta_interpolate_vec3f(posInterp, interp->shadowPosPrev, interp->shadowPos, delta);
+        }
         gCurGraphNodeObject = interp->obj;
         extern u8 gInterpolatingSurfaces;
         gInterpolatingSurfaces = true;
@@ -320,7 +324,11 @@ void patch_mtx_interpolated(f32 delta) {
             mtxf_mul(bufMtx.m, bufMtx.m, camTranfInv.m);
             mtxf_mul(bufMtxPrev.m, bufMtxPrev.m, prevCamTranfInv.m);
         }
-        delta_interpolate_mtx(&gMtxTbl[i].interp, &bufMtxPrev, &bufMtx, delta);
+        if (configInterpolationMode == 2) {
+            memcpy(gMtxTbl[i].interp.m, bufMtx.m, sizeof(f32) * 4 * 4);
+        } else {
+            delta_interpolate_mtx(&gMtxTbl[i].interp, &bufMtxPrev, &bufMtx, delta);
+        }
         if (gMtxTbl[i].usingCamSpace) {
             // transform back to camera space, respecting camera interpolation
             Mtx camInterp;
