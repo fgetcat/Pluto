@@ -122,6 +122,19 @@ void OpenEyeSelector() {
     }
 }
 
+void OpenComboPopupMenu(Expression* expression, int index) {
+    saturn_file_browser_filter_extension("png");
+    saturn_file_browser_scan_directory(expression->FolderPath);
+    if (saturn_file_browser_show_tree("expr_" + std::to_string(index), index)) {
+        for (int tex = 0; tex < expression->Textures.size(); tex++) {
+            if (expression->Textures[tex].SmallExpressionPath(expression->Name) == saturn_file_browser_get_selected().generic_string()) {
+                expression->CurrentIndex = tex;
+                break;
+            }
+        }
+    }
+}
+
 /* Expression selector UI for all other expressions, i.e. individual dropdowns or checkboxes */
 void OpenComboSelector(Expression* expression, int index) {
     if (expression->Name == "eyes") return;
@@ -151,25 +164,21 @@ void OpenComboSelector(Expression* expression, int index) {
                 if (is_selected) expression->CurrentIndex = select_index;
                 else expression->CurrentIndex = deselect_index;
             }
-            OpenExpressionPreview(&expression->Textures[expression->CurrentIndex]);
+            if (ImGui::IsItemHovered() && ImGui::IsMouseReleased(ImGuiMouseButton_Right))
+                ImGui::OpenPopup((std::string(label_name) + "Extended").c_str());
+            if (ImGui::BeginPopup((std::string(label_name) + "Extended").c_str())) {
+                OpenComboPopupMenu(expression, index);
+                ImGui::EndPopup();
+            }
 
-            ImGui::SameLine(); TimelineButton(expression->Name, &expression->CurrentIndex, true);
+            OpenExpressionPreview(&expression->Textures[expression->CurrentIndex]);
     } else {
         // Use dropdown
         std::string defaultLabel = expression->Textures[expression->CurrentIndex].ShortFileName();
         ImGui::PushItemWidth((current_expressions.size() > 8) ? ImGui::GetColumnWidth(1) - 14 : ImGui::GetColumnWidth(1));
 
         if (ImGui::BeginCombo(label_name.c_str(), defaultLabel.c_str(), ImGuiComboFlags_None)) {
-            saturn_file_browser_filter_extension("png");
-            saturn_file_browser_scan_directory(expression->FolderPath);
-            if (saturn_file_browser_show_tree("expr_" + std::to_string(index), index)) {
-                for (int tex = 0; tex < expression->Textures.size(); tex++) {
-                    if (expression->Textures[tex].SmallExpressionPath(expression->Name) == saturn_file_browser_get_selected().generic_string()) {
-                        expression->CurrentIndex = tex;
-                        break;
-                    }
-                }
-            }
+            OpenComboPopupMenu(expression, index);
             ImGui::EndCombo();
         }
 
@@ -271,6 +280,9 @@ void OpenModelCCSelector(PackData* pack) {
 }
 
 void SwitchOption(const char* label, int* state, const char* array[], int size) {
+    TimelineButton(std::string(label) + "Key", state, true);
+    ImGui::SameLine();
+    
     const char* preview_label = (*state >= size) ? "Custom" : array[*state];
     if (ImGui::BeginCombo(label, preview_label)) {
         for (int i = 0; i < size; i++) {
@@ -301,9 +313,6 @@ void SwitchOption(const char* label, int* state, const char* array[], int size) 
         ImGui::PopItemWidth();
         ImGui::EndPopup();
     }
-
-    ImGui::SameLine();
-    TimelineButton(std::string(label) + "Key", state, true);
 }
 
 void OpenSwitchOptions() {
@@ -459,10 +468,11 @@ void OpenModelSettings() {
                     add_to_model_queue(active_saturn_model_index, pack->mEnabled, false);
                 }
                 ImGui::BeginDisabled(accessory_packs.size() <= 0);
-                if (ImGui::BeginMenu("Accessories")) {
+                // To be added
+                /*if (ImGui::BeginMenu("Accessories")) {
                     OpenAccessorySettings();
                     ImGui::EndMenu();
-                }
+                }*/
                 ImGui::EndDisabled();
                 ImGui::Separator();
                 ImGui::Checkbox("Show All Expressions", &ignore_expression_visibility);
