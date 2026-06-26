@@ -8,6 +8,7 @@
 #include "src/pc/utils/misc.h"
 #include "sounds.h"
 #include "audio/external.h"
+#include "menu/title_music.h"
 #include "src/game/bettercamera.h"
 
 static struct DjuiPanel* sPanelList = NULL;
@@ -215,6 +216,7 @@ void djui_panel_shutdown(void) {
     configfile_save(configfile_name());
     if (gDjuiInMainMenu) {
         gDjuiInMainMenu = false;
+        title_music_stop();
         newcam_init_settings();
     }
     sShuttingDown = false;

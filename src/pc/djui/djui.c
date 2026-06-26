@@ -13,6 +13,7 @@
 #include "pc/lua/smlua_hooks.h"
 #include "djui_panel_playerlist.h"
 #include "djui_hud_utils.h"
+#include "menu/title_music.h"
 #include "engine/math_util.h"
 #include "pc/utils/misc.h"
 
@@ -101,6 +102,7 @@ void djui_init_late(void) {
 
     // djui_panel_debug_create();
     djui_cursor_create();
+    title_music_start();
 }
 
 void djui_connect_menu_open(void) {

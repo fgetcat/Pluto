@@ -35,6 +35,7 @@
 #include "rumble_init.h"
 #include "game/interaction.h"
 #include "menu/intro_geo.h"
+#include "menu/title_music.h"
 
 #include "pc/pc_main.h"
 #include "pc/cliopts.h"
@@ -1475,7 +1476,7 @@ void update_menu_level(void) {
 
     // figure out music
     stop_cap_music();
-    if (!configMenuSound || configMenuStaffRoll || curLevel == LEVEL_CASTLE_GROUNDS) {
+    /*if (!configMenuSound || configMenuStaffRoll || curLevel == LEVEL_CASTLE_GROUNDS) {
         reset_volume();
         disable_background_sound();
         set_background_music(0, SEQ_MENU_FILE_SELECT, 0);
@@ -1483,7 +1484,16 @@ void update_menu_level(void) {
         reset_volume();
         disable_background_sound();
         set_background_music(gCurrentArea->musicParam, gCurrentArea->musicParam2, 0);
-    }
+    }*/
+   
+    // use our own music for the djui menu
+    reset_volume();
+    raise_background_noise(1);
+    set_background_music(0, SEQ_MENU_FILE_SELECT, 0);
+    fade_volume_scale(SEQ_PLAYER_LEVEL, 0, 1);
+    disable_background_sound();
+    title_music_start();
+    title_music_update_volume();
 
     if (configMenuStaffRoll) {
         return;
