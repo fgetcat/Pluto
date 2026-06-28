@@ -1755,7 +1755,7 @@ bool node_is_any_player(struct Object *node) {
         }
     }
     if (node == find_hat_object()) return true;
-    if (node == find_chroma_box()) return chroma_show_floor && !chroma_transparent_background && !capture_screenshot;
+    if (node == find_chroma_box()) return chroma_show_floor && !chroma_show_geo && !chroma_transparent_background && !capture_screenshot;
     return false;
 }
 
@@ -1770,7 +1770,7 @@ static void geo_process_object(struct Object *node) {
 
     // Chroma Key: Objects
     if (auto_chroma && !chroma_show_objects && !node_is_any_player(node)) return;
-    if (node == find_chroma_box() && !chroma_show_floor) return;
+    if (node == find_chroma_box() && (!chroma_show_floor || chroma_show_geo)) return;
 
     struct Object* lastProcessingObject = gCurGraphNodeProcessingObject;
     struct MarioState* lastMarioState = gCurGraphNodeMarioState;
