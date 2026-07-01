@@ -22,7 +22,7 @@ extern "C" {
     extern float wiggle_intensity;
     extern bool wiggle_bone_detected;
     extern bool wind_enabled;
-    extern float wind_angle;
+    extern float wind_angle[3];
     extern float wind_strength;
     extern float wind_sway;
     int saturn_camera_update();

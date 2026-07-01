@@ -1460,9 +1460,8 @@ static void geo_process_extra_wiggle(struct GraphNodeExtraWiggle *node) {
         // These are overly simple. I could probably make them better if I was an elite mathematician
         // But they work basically by oscillating the bone's position in a circle based on the wind params
         if (use_wiggle && wind_enabled && !wind_disabled) {
-            float wind_rad = wind_angle * (3.14159265f / 180.0f);
-            float cos_dir = cosf(wind_rad) * wind_strength;
-            float sin_dir = sinf(wind_rad) * wind_strength;
+            float cos_dir = wind_angle[0] * 2.f;
+            float sin_dir = wind_angle[1] * 2.f;
             float osc_cur  = 1.0f + wind_sway * sinf((float)gGlobalTimer * 0.2f);
             float osc_prev = 1.0f + wind_sway * sinf((float)(gGlobalTimer - 1) * 0.2f);
             gMatStack[gMatStackIndex + 1][3][0]     += cos_dir * osc_cur;

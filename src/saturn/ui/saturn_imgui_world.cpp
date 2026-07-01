@@ -152,6 +152,8 @@ void JoystickSlider(float& _x, float& _y, float scale = 100.f, float b_scale = 1
 };
 
 void OpenQuickOptions() {
+    ImGui::Checkbox("Shadows", &configPlutoShadows);
+
     ImGui::Checkbox("Custom Lighting", &shade_lighting_enabled);
     if (shade_lighting_enabled) {
         ImGui::BeginChild("##lighting", ImVec2(175, 140), ImGuiChildFlags_Border);
@@ -198,19 +200,26 @@ void OpenQuickOptions() {
         ImGui::EndChild();
     }
 
-    // Quick Options
-    //ImGui::Checkbox("HUD", &enable_hud);
-    ImGui::Checkbox("Shadows", &configPlutoShadows);
-
     if (wiggle_bone_detected) {
-        ImGui::Separator();
         ImGui::Checkbox("Wind###wind_enabled", &wind_enabled);
-        ImGui::BeginDisabled(!wind_enabled);
-        ImGui::PushItemWidth(175);
-        ImGui::SliderFloat("###wind_angle",    &wind_angle,    0.f, 360.f, "Angle %.0f deg",  ImGuiSliderFlags_NoRoundToFormat);
-        ImGui::SliderFloat("###wind_strength", &wind_strength, 0.f, 5.f,   "Strength %.2f",   ImGuiSliderFlags_NoRoundToFormat);
-        ImGui::SliderFloat("###wind_sway",     &wind_sway,     0.f, 3.f,   "Sway %.2f",       ImGuiSliderFlags_NoRoundToFormat);
-        ImGui::PopItemWidth();
-        ImGui::EndDisabled();
+        if (wind_enabled) {
+            ImGui::BeginChild("##wind", ImVec2(175, 155), ImGuiChildFlags_Border);
+            JoystickSlider(wind_angle[0], wind_angle[1], 35.f, 7.f);
+            ImGui::SameLine();
+            ImGui::BeginChild("##wind_dir_ctrl", ImVec2(69, 35*2+3), ImGuiChildFlags_None, ImGuiWindowFlags_None);
+            if (ImGui::MenuItem("Reset")) {
+                wind_angle[0] = 0.f;
+                wind_angle[1] = 0.f;
+                wind_angle[2] = 0.f;
+            }
+            ImGui::EndChild();
+            ImGui::SetNextItemWidth(135);
+            ImGui::DragFloat3("##wind_dir", wind_angle, 0.01f, -1.f, 1.f, "%.2f");
+            ImGui::SameLine(); TimelineButton("Wind Dir", (Vec3f*)&wind_angle);
+            ImGui::SetNextItemWidth(135);
+            ImGui::SliderFloat("###wind_sway", &wind_sway, 0.f, 3.f, "Sway %.2f");
+            ImGui::SameLine(); TimelineButton("Wind Sway", &wind_sway);
+            ImGui::EndChild();
+        }
     }
 }
