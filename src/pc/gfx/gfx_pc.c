@@ -144,6 +144,7 @@ static struct RDP {
         uint8_t siz;
         uint8_t tile_number;
         uint8_t is_expression;
+        uint32_t line_size_bytes;
     } texture_to_load;
     struct {
         const uint8_t *addr;
@@ -420,8 +421,11 @@ static bool gfx_texture_cache_lookup(int tile, struct TextureHashmapNode **n, co
 static void import_texture_rgba32(int tile) {
     tile = tile % RDP_TILES;
     if (!rdp.loaded_texture[tile].addr) { return; }
-    uint32_t width = rdp.texture_tile.line_size_bytes / 2;
-    uint32_t height = (rdp.loaded_texture[tile].size_bytes / 2) / rdp.texture_tile.line_size_bytes;
+    uint32_t lsb = rdp.texture_to_load.is_expression
+        ? rdp.texture_to_load.line_size_bytes
+        : rdp.texture_tile.line_size_bytes;
+    uint32_t width  = lsb / 4;
+    uint32_t height = rdp.loaded_texture[tile].size_bytes / lsb;
     gfx_rapi->upload_texture(rdp.loaded_texture[tile].addr, width, height);
 }
 
@@ -1511,7 +1515,7 @@ void saturn_update_texture_expression(const uint8_t* addr, uint8_t tile, uint32_
     uint32_t sizeBytes = (uint32_t)(width * height) << wordSizeShift;
     rdp.loaded_texture[tile].size_bytes = sizeBytes;
 
-    rdp.texture_tile.line_size_bytes = (uint32_t)width * 2;
+    rdp.texture_to_load.line_size_bytes = (uint32_t)width * ((size == G_IM_SIZ_32b) ? 4 : 2);
 }
 
 static void gfx_dp_set_texture_image(UNUSED uint32_t format, uint32_t size, UNUSED uint32_t width, const void* addr) {
@@ -1527,7 +1531,7 @@ static void gfx_dp_set_tile(uint8_t fmt, uint32_t siz, uint32_t line, uint32_t t
         rdp.texture_tile.siz = siz;
         rdp.texture_tile.cms = cms;
         rdp.texture_tile.cmt = cmt;
-        if (rdp.texture_to_load.is_expression == 0) rdp.texture_tile.line_size_bytes = line * 8;
+        rdp.texture_tile.line_size_bytes = line * 8;
         if (!sOnlyTextureChangeOnAddrChange) {
             // I don't know if we ever need to set these...
             rdp.textures_changed[0] = true;
@@ -2224,6 +2228,8 @@ static void OPTIMIZE_O3 djui_gfx_dp_execute_override(void) {
     if (!sDjuiOverride) { return; }
     sDjuiOverride = false;
 
+    rdp.texture_to_load.is_expression = 0;
+
     // gsDPSetTextureImage
     uint8_t sizeLoadBlock = (sDjuiOverrideB == 32) ? 3 : 2;
     rdp.texture_to_load.addr = sDjuiOverrideTexture;
@@ -2239,7 +2245,8 @@ static void OPTIMIZE_O3 djui_gfx_dp_execute_override(void) {
     gfx_update_loaded_texture(rdp.texture_to_load.tile_number, sizeBytes, rdp.texture_to_load.addr);
 
     // gsDPSetTile
-    uint32_t line = (((sDjuiOverrideW * 2) + 7) >> 3);
+    uint32_t bpp = (sDjuiOverrideB == 32) ? 4 : 2;
+    uint32_t line = (((sDjuiOverrideW * bpp) + 7) >> 3);
     rdp.texture_tile.line_size_bytes = line * 8;
 
     // gsDPSetTileSize
