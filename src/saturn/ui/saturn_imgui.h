@@ -34,6 +34,7 @@ extern "C" {
     extern bool show_window_model_settings;
     extern bool show_window_animations;
     extern bool show_window_timeline;
+    extern bool dialog_open;
     
     extern bool capture_screenshot;
     extern int screenshot_size[2];
@@ -51,6 +52,7 @@ extern "C" {
     void imgui_hud();
     extern bool skybox_has_deinit;
     void imgui_capture_screenshot(void*);
+    struct TexturePath;
     void saturn_request_preview(struct TexturePath* texture);
 
     void UpdatePaletteFromEditor(int);

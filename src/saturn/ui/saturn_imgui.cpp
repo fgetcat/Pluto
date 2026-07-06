@@ -81,6 +81,7 @@ bool show_window_animations = true;
 bool saturn_any_bone_dot_hovered = false;
 bool show_window_dialog = false;
 bool show_window_timeline = false;
+bool dialog_open = false;
 
 char status_text[256] = { 0 };
 
@@ -91,7 +92,7 @@ bool screenshot_custom_res;
 int screenshot_multiplier = 1;
 int screenshot_size[2] = { 320, 240 };
 
-char uiDialogText[1024 * 16] = "";
+char uiDialogText[1024 * 16] = "Welcome to Pluto";
 
 bool show_rule_of_thirds = false;
 ALIGNED8 const u8 rule_of_thirds[] = {
@@ -297,6 +298,36 @@ void imgui_update() {
     if (timelines.count("Angle") && gMarioStates[0].marioObj)
         gMarioStates[0].faceAngle[1] = (s16)(face_angle * 182.04f);
 
+    // Mini dialog box handler (uses bool for open/close so it can be keyframed)
+    {
+        static bool s_prev_dialog_open = false;
+        static char s_prev_dialog_text[1024 * 16] = {};
+        extern s16 gDialogID;
+        extern s8  gDialogBoxState;
+        extern f32 gDialogBoxOpenTimer;
+        extern f32 gDialogBoxScale;
+        if (dialog_open && !s_prev_dialog_open) {
+            smlua_text_utils_dialog_replace(DIALOG_CUSTOM, 1, 6, 30, 200, uiDialogText);
+            create_dialog_box(DIALOG_CUSTOM);
+        } else if (!dialog_open && s_prev_dialog_open) {
+            // Reset state
+            if (gDialogID != -1) {
+                gDialogBoxOpenTimer = 0.0f;
+                gDialogBoxScale = 1.0f;
+                gDialogBoxState = 3; // DIALOG_STATE_CLOSING
+            }
+        } else if (dialog_open && s_prev_dialog_open && gDialogID == -1) {
+            // Dialog was closed elsewhere
+            smlua_text_utils_dialog_replace(DIALOG_CUSTOM, 1, 6, 30, 200, uiDialogText);
+            create_dialog_box(DIALOG_CUSTOM);
+        } else if (dialog_open && gDialogID != -1 && strncmp(uiDialogText, s_prev_dialog_text, sizeof(s_prev_dialog_text)) != 0) {
+            // Update text string if it was changed
+            smlua_text_utils_dialog_replace(DIALOG_CUSTOM, 1, 6, 30, 200, uiDialogText);
+        }
+        strncpy(s_prev_dialog_text, uiDialogText, sizeof(s_prev_dialog_text) - 1);
+        s_prev_dialog_open = dialog_open;
+    }
+
     if (anim_sync_to_timeline && (is_editing_panim || override_anim) && gMarioStates[0].marioObj) {
         struct Animation* curAnim = gMarioStates[0].marioObj->header.gfx.animInfo.curAnim;
         if (curAnim) {
@@ -449,7 +480,7 @@ static void imgui_build_widgets() {
                 ImGui::Separator();
                 if (ImGui::MenuItem("Color Code Editor", NULL, show_window_cc_editor)) show_window_cc_editor = !show_window_cc_editor;
                 if (ImGui::MenuItem("Animation Mixtape", NULL, show_window_animations, freeze_camera)) show_window_animations = !show_window_animations;
-                //if (ImGui::MenuItem("Textbox", NULL, show_window_dialog)) show_window_dialog = !show_window_dialog;
+                if (ImGui::MenuItem("Textbox Editor", NULL, show_window_dialog)) show_window_dialog = !show_window_dialog;
                 if (ImGui::MenuItem("Timeline", NULL, show_window_timeline)) show_window_timeline = !show_window_timeline;
                 ImGui::Separator();
                 ImGui::Checkbox("Show Wireframes", &wireframe_mode);
@@ -657,10 +688,15 @@ static void imgui_build_widgets() {
             ImGui::Begin("Dialog Textbox", &show_window_dialog, ImGuiWindowFlags_AlwaysAutoResize);
             ImGui::InputTextMultiline("###dialog_box", uiDialogText, IM_ARRAYSIZE(uiDialogText),
                 ImVec2(150, ImGui::GetTextLineHeight() * 6.5f), ImGuiInputTextFlags_None);
-            
-            if (ImGui::Button("Create###create_dialog_box")) {
-                smlua_text_utils_dialog_replace(DIALOG_CUSTOM,1,6,30,200, uiDialogText);
-                create_dialog_box(DIALOG_CUSTOM);
+            if (show_window_timeline) {
+                ImGui::SameLine(); TimelineButton("Textbox Text###timeline_dialog_text", uiDialogText, sizeof(uiDialogText));
+                ImGui::Checkbox("Open on Timeline", &dialog_open);
+                ImGui::SameLine(); TimelineButton("Textbox###timeline_dialog_open", &dialog_open);
+            } else {
+                if (ImGui::Button("Create###create_dialog_box")) {
+                    smlua_text_utils_dialog_replace(DIALOG_CUSTOM,1,6,30,200, uiDialogText);
+                    create_dialog_box(DIALOG_CUSTOM);
+                }
             }
             ImGui::End();
         }
