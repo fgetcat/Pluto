@@ -359,14 +359,14 @@ void OpenCCEditor() {
         }
         if (ImGui::BeginTabItem("GameShark")) {
             // GameShark
-            if (ImGui::InputTextMultiline("###gameshark_box", uiGameShark, IM_ARRAYSIZE(uiGameShark), ImVec2(-FLT_MIN, ImGui::GetTextLineHeight() * 24.5f),
+            if (ImGui::InputTextMultiline("###gameshark_box", uiGameShark, IM_ARRAYSIZE(uiGameShark), ImVec2(-FLT_MIN * ui_scale, ImGui::GetTextLineHeight() * 24.5f),
                 ImGuiInputTextFlags_CharsHexadecimal | ImGuiInputTextFlags_CharsUppercase | ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_CtrlEnterForNewLine)) {
                     PasteGameShark(std::string(uiGameShark), true);
                     current_color_code.ParseGameShark();
                     UpdateEditorFromPalette();
             }
             ImGui::EndTabItem();
-            ImGui::PushItemWidth(100);
+            ImGui::PushItemWidth(100 * ui_scale);
             ImGui::InputText(".gs", uiCcLabelName, IM_ARRAYSIZE(uiCcLabelName));
             ImGui::PopItemWidth();
             if (ImGui::Button("Add to List")) {

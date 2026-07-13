@@ -65,7 +65,7 @@ void OpenExpressionPreview(TexturePath* texture) {
                 height *= scale;
             }
             ImGui::BeginTooltip();
-            ImGui::Image((void*)(intptr_t)texture->Preview, ImVec2(width, height));
+            ImGui::Image((void*)(intptr_t)texture->Preview, ImVec2(width * ui_scale, height * ui_scale));
             ImGui::EndTooltip();
         }
     }
@@ -214,10 +214,10 @@ void OpenModelExpressionSelector(PackData* pack) {
     if (current_expressions.size() > 1) {
         // A scrollbar is visible if the expressions list is too long
         if (GetValidExpressionCount(current_expressions) > 8)
-            ImGui::BeginChild(("###menu_exp_model"), ImVec2(200, 190), ImGuiChildFlags_ResizeY, ImGuiWindowFlags_NoBackground);
+            ImGui::BeginChild(("###menu_exp_model"), ImVec2(200 * ui_scale, 190 * ui_scale), ImGuiChildFlags_ResizeY, ImGuiWindowFlags_NoBackground);
         
         // Create table UI
-        ImGui::BeginTable("###menu_exp_table", 2, ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_RowBg, ImVec2(200, 0));
+        ImGui::BeginTable("###menu_exp_table", 2, ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_RowBg, ImVec2(200 * ui_scale, 0));
         ImGui::TableSetupColumn("Expression", ImGuiTableColumnFlags_WidthFixed);
         ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch);
 
@@ -232,9 +232,10 @@ void OpenModelExpressionSelector(PackData* pack) {
 
     // Warning label for non-RGBA32 textures
     if (!IsAllRGBA32(current_expressions) && !format_warning_dismissed) {
-        ImGui::BeginChild("###menu_model_warning", ImVec2(200, 75), ImGuiChildFlags_Border, ImGuiWindowFlags_None);
+        ImGui::BeginChild("###menu_model_warning", ImVec2(200 * ui_scale, 75 * ui_scale), ImGuiChildFlags_Border, ImGuiWindowFlags_None);
         ImGui::BeginDisabled();
         ImGui::TextWrapped("Some materials are not set to texture format RGBA-32 and have been disabled.");
+        ImGui::TextWrapped("Did you delete the mario_geo.bin?");
         //ImGui::TextWrapped("Some materials are not set to texture format RGBA-32 - this may cause graphical errors!");
         ImGui::EndDisabled();
         if (ImGui::MenuItem("Show Anyway###dismiss_model_warning"))
@@ -310,7 +311,7 @@ void SwitchOption(const char* label, int* state, const char* array[], int size) 
             ImGui::OpenPopup((std::string(label) + "Extended").c_str());
     }
     if (ImGui::BeginPopup((std::string(label) + "Extended").c_str())) {
-        ImGui::PushItemWidth(100);
+        ImGui::PushItemWidth(100 * ui_scale);
         if (ImGui::InputInt("###switch_state", state, 1, 10, ImGuiInputTextFlags_None))
             if (array == powerup_switches) vanish_transparency = 128; // Reset transparency when powerup changes
         if (ImGui::Selectable("Reset")) {
@@ -323,7 +324,7 @@ void SwitchOption(const char* label, int* state, const char* array[], int size) 
 }
 
 void OpenSwitchOptions() {
-    ImGui::PushItemWidth(150);
+    ImGui::PushItemWidth(150 * ui_scale);
     if (ImGui::MenuItem("Reset###reset_switches")) {
         switch_state_eyes = 0;
         switch_state_hand_right = 0;
@@ -353,7 +354,7 @@ void OpenSwitchOptions() {
 }
 
 void ScaleWidget(std::string label, float* scaleX, float* scaleY, float* scaleZ) {
-    ImGui::PushItemWidth(150);
+    ImGui::PushItemWidth(150 * ui_scale);
     if (ImGui::SliderFloat(label.c_str(), scaleX, 0.f, 5.f, "Scale %.2f", ImGuiSliderFlags_NoRoundToFormat))
         *scaleY = *scaleX, *scaleZ = *scaleX;
     if (ImGui::IsItemHovered()) {
@@ -378,7 +379,7 @@ void ScaleWidget(std::string label, float* scaleX, float* scaleY, float* scaleZ)
 
 void OpenExtraOptions() {
     if (gMarioStates[0].marioObj != NULL) {
-        ImGui::PushItemWidth(150);
+        ImGui::PushItemWidth(150 * ui_scale);
         if (ImGui::MenuItem("Reset###reset_extra")) {
             is_spinning = false;
             spinning_speed = 0.f;
@@ -389,7 +390,7 @@ void OpenExtraOptions() {
 
         ScaleWidget("###linkedScale", &marioScaleX, &marioScaleY, &marioScaleZ);
 
-        ImGui::Dummy(ImVec2(15, 0));
+        ImGui::Dummy(ImVec2(15 * ui_scale, 0));
         if (ImGuiKnobs::Knob("Angle", &face_angle, -180.f, 180.f, 0.f, "%.0f deg", ImGuiKnobVariant_Dot, 0.f, ImGuiKnobFlags_DragHorizontal))
             gMarioStates[0].faceAngle[1] = (s16)(face_angle * 182.04f);
         else if (!timelines.count("Angle"))
@@ -437,7 +438,7 @@ void OpenExtraOptions() {
 void OpenAccessorySettings() {
     ImGui::BeginDisabled(accessory_packs.size() <= 0);
     if (accessory_packs.size() > 0) {
-        if (ImGui::BeginListBox("###accessory_packs_list", ImVec2(150, 100))) {
+        if (ImGui::BeginListBox("###accessory_packs_list", ImVec2(150 * ui_scale, 100 * ui_scale))) {
             for (int i = 0; i < accessory_packs.size(); i++) {
                 PackData* pack = DynOS_Pack_GetFromIndex(accessory_packs[i]);
                 std::string pack_label = pack->mDisplayName.begin();
@@ -455,7 +456,7 @@ void OpenAccessorySettings() {
         }
         ImGui::BeginDisabled(active_accessory_index == -1);
         ImGui::Separator();
-        ImGui::PushItemWidth(150);
+        ImGui::PushItemWidth(150 * ui_scale);
         ImGui::InputInt3("Position", hat_pos, ImGuiInputTextFlags_CharsDecimal);
         ImGui::InputInt3("Rotation", hat_rot, ImGuiInputTextFlags_CharsDecimal);
         ScaleWidget("###accessoryScale", &hat_scale[0], &hat_scale[1], &hat_scale[2]);
@@ -594,7 +595,7 @@ void OpenModelSelector() {
     }
 
     if (DynOS_Pack_GetCount() >= 20) {
-        ImGui::SetNextItemWidth(200);
+        ImGui::SetNextItemWidth(200 * ui_scale);
         ImGui::InputTextWithHint("###model_packs_search", "Search models...", model_search_term, IM_ARRAYSIZE(model_search_term), ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_CharsLowercase);
     } else if (model_search_term != "") strcpy(model_search_term, "");
 
@@ -607,7 +608,7 @@ void OpenModelSelector() {
     }
     ImGui::Separator();
 
-    if (ImGui::BeginListBox("###model_packs_list", ImVec2(200, 200))) {
+    if (ImGui::BeginListBox("###model_packs_list", ImVec2(200 * ui_scale, 200 * ui_scale))) {
         for (int i = 0; i < model_packs.size(); i++) {
             if (model_packs[i].second) continue; // Skip accessory packs
             PackData* pack = model_packs[i].first;

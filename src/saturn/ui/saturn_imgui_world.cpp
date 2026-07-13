@@ -9,6 +9,7 @@
 #include "saturn/saturn_models.h"
 #include "saturn/saturn_textures.h"
 #include "saturn/saturn_keyframe.h"
+#include "saturn/ui/saturn_imgui.h"
 #include "saturn/libs/imgui/imgui.h"
 #include "saturn/libs/imgui/imgui_internal.h"
 #include "saturn/libs/imgui/imgui_impl_sdl.h"
@@ -60,7 +61,7 @@ void saturn_set_chroma_color(ImVec4 color) {
 void OpenAutoChromaMenu() {
     ImGui::Checkbox("Chroma Key", &auto_chroma);
     ImGui::SameLine(); TimelineButton("Chroma Key", &auto_chroma);
-    ImGui::BeginChild("auto_chroma", ImVec2(175, 0), ImGuiChildFlags_Border | ImGuiChildFlags_AutoResizeY);
+    ImGui::BeginChild("auto_chroma", ImVec2(175 * ui_scale, 0), ImGuiChildFlags_Border | ImGuiChildFlags_AutoResizeY);
     ImGui::BeginDisabled(!auto_chroma);
     // Skybox Color
     ImGui::BeginDisabled(chroma_transparent_background);
@@ -100,6 +101,8 @@ void JoystickSlider(float& _x, float& _y, float scale = 100.f, float b_scale = 1
     ImGuiID id = ImGui::GetCurrentWindow()->GetID("##joyclick");
     bool& button_clicked = *ImGui::GetStateStorage()->GetBoolRef(id, false);
     const auto& mouse = ImGui::GetIO().MousePos;
+    scale *= ui_scale;
+    b_scale *= ui_scale;
 
     ImVec2 circle_center = ImVec2(p.x + scale, p.y + scale);
     float distance = sqrt(pow(mouse.x - circle_center.x, 2) + pow(mouse.y - circle_center.y, 2));
@@ -157,12 +160,12 @@ void OpenQuickOptions() {
 
     ImGui::Checkbox("Custom Lighting", &shade_lighting_enabled);
     if (shade_lighting_enabled) {
-        ImGui::BeginChild("##lighting", ImVec2(175, 140), ImGuiChildFlags_Border);
+        ImGui::BeginChild("##lighting", ImVec2(175 * ui_scale, 140 * ui_scale), ImGuiChildFlags_Border);
         JoystickSlider(shade_lighting_dir[0], shade_lighting_dir[1], 35.f, 7.f);
         ImGui::SameLine();
-        ImGui::VSliderFloat("##lighting_z", ImVec2(20, 35*2), &shade_lighting_dir[2], -1.f, 1.f, "");
+        ImGui::VSliderFloat("##lighting_z", ImVec2(20 * ui_scale, 35*2 * ui_scale), &shade_lighting_dir[2], -1.f, 1.f, "");
         ImGui::SameLine();
-        ImGui::BeginChild("##lighting_dir", ImVec2(69, 35*2+5), ImGuiChildFlags_None, ImGuiWindowFlags_None);
+        ImGui::BeginChild("##lighting_dir", ImVec2(69 * ui_scale, (35*2+5) * ui_scale), ImGuiChildFlags_None, ImGuiWindowFlags_None);
         if (ImGui::MenuItem("Reset")) {
             shade_lighting_dir[0] = 0.f;
             shade_lighting_dir[1] = 0.f;
@@ -195,7 +198,7 @@ void OpenQuickOptions() {
             Color4Widget("Fog Color", &uiFogColor, shade_lighting_fog);
             ImGui::EndPopup();
         }
-        ImGui::SetNextItemWidth(135);
+        ImGui::SetNextItemWidth(135 * ui_scale);
         ImGui::DragFloat3("##lighting_pos", shade_lighting_dir, 0.01f, -1.f, 1.f, "%.2f", ImGuiSliderFlags_None);
         ImGui::SameLine(); TimelineButton("Light Dir", (Vec3f*)&shade_lighting_dir);
         ImGui::EndChild();
@@ -204,20 +207,20 @@ void OpenQuickOptions() {
     if (wiggle_bone_detected) {
         ImGui::Checkbox("Wind###wind_enabled", &wind_enabled);
         if (wind_enabled) {
-            ImGui::BeginChild("##wind", ImVec2(175, 138), ImGuiChildFlags_Border);
+            ImGui::BeginChild("##wind", ImVec2(175 * ui_scale, 138 * ui_scale), ImGuiChildFlags_Border);
             JoystickSlider(wind_angle[0], wind_angle[1], 35.f, 7.f);
             ImGui::SameLine();
-            ImGui::BeginChild("##wind_dir_ctrl", ImVec2(69, 35*2+3), ImGuiChildFlags_None, ImGuiWindowFlags_None);
+            ImGui::BeginChild("##wind_dir_ctrl", ImVec2(69 * ui_scale, (35*2+3) * ui_scale), ImGuiChildFlags_None, ImGuiWindowFlags_None);
             if (ImGui::MenuItem("Reset")) {
                 wind_angle[0] = 0.f;
                 wind_angle[1] = 0.f;
                 wind_angle[2] = 0.f;
             }
             ImGui::EndChild();
-            ImGui::SetNextItemWidth(135);
+            ImGui::SetNextItemWidth(135 * ui_scale);
             ImGui::DragFloat3("##wind_dir", wind_angle, 0.01f, -1.f, 1.f, "%.2f", ImGuiSliderFlags_None);
             ImGui::SameLine(); TimelineButton("Wind Dir", (Vec3f*)&wind_angle);
-            ImGui::SetNextItemWidth(135);
+            ImGui::SetNextItemWidth(135 * ui_scale);
             ImGui::SliderFloat("###wind_sway", &wind_sway, 0.f, 3.f, "Sway %.2f", ImGuiSliderFlags_None);
             ImGui::SameLine(); TimelineButton("Wind Sway", &wind_sway);
             ImGui::EndChild();

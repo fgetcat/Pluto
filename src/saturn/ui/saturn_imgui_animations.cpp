@@ -57,7 +57,7 @@ void BoneEditorWindow() {
         ImGui::Begin("Animation Pose Editor", &is_editing_panim, ImGuiWindowFlags_AlwaysAutoResize);
         bone_editor_was_open = true;
         ImGui::Text("Edit the current animation pose by\ndragging the translation/rotation/scale\ngizmos in the 3D view.");
-        ImGui::PushItemWidth(150);
+        ImGui::PushItemWidth(150 * ui_scale);
         ImGui::DragFloat3("Rotation###pose_rotation", current_pluto_anim.Bones[0].Rotation, 1.0f, 0.0f, 0.0f, "%.0f", ImGuiSliderFlags_AlwaysClamp);
         ImGui::DragFloat3("Offset###pose_offset", g_root_offset, 1.0f, 0.0f, 0.0f, "%.0f", ImGuiSliderFlags_AlwaysClamp);
         ImGui::PopItemWidth();
@@ -211,9 +211,9 @@ void BoneEditorWindow() {
 
             ImGui::TextColored(ImVec4(1.f, 1.f, 0.4f, 1.f), "%s", pb.Name().c_str());
             ImGui::Separator();
-            ImGui::PushItemWidth(150);
-
-            if (is_editing_panim && pause_anim && override_anim) {                ImGui::DragFloat3("Rotation", pb.Rotation, 1.0f, -360.0f, 360.0f, "%.0f");
+            ImGui::PushItemWidth(150 * ui_scale);
+            if (is_editing_panim && pause_anim && override_anim) {
+                ImGui::DragFloat3("Rotation", pb.Rotation, 1.0f, -360.0f, 360.0f, "%.0f");
                 if (ImGui::IsItemHovered() && ImGui::GetIO().MouseClicked[1])
                     pb.Rotation[0] = pb.Rotation[1] = pb.Rotation[2] = 0;
 
@@ -272,7 +272,7 @@ void OpenAnimationsMenu() {
 
         if (vanillaMenuOpen) {
             ImGui::BeginDisabled(is_editing_panim);
-            ImGui::SetNextItemWidth(208);
+            ImGui::SetNextItemWidth(208 * ui_scale);
             if (ImGui::BeginCombo("###v_anim_combo", saturn_animations[selected_anim_index], ImGuiComboFlags_None)) {
                 ImGui::InputTextWithHint("###anim_search", "Search...", animSearchTerm, IM_ARRAYSIZE(animSearchTerm), ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_CharsUppercase);
                 ImGui::Separator();
@@ -344,7 +344,7 @@ void OpenAnimationsMenu() {
                 ImGui::EndDisabled();
 
                 // Metadata
-                ImGui::BeginChild("###p_metadata", ImVec2(208, 48), ImGuiChildFlags_Border);
+                ImGui::BeginChild("###p_metadata", ImVec2(208 * ui_scale, 48 * ui_scale), ImGuiChildFlags_Border);
                 ImGui::Text("%s", current_pluto_anim.Name.c_str());
                 if (ImGui::BeginItemTooltip()) {
                     ImGui::TextUnformatted(current_pluto_anim.Name.c_str());
@@ -401,7 +401,7 @@ void OpenAnimationsMenu() {
             ImGui::BeginDisabled(hang_anim);
                 ImGui::SameLine(); ImGui::Checkbox("Loop", &loop_anim);
             ImGui::EndDisabled();
-            ImGui::SetNextItemWidth(150);
+            ImGui::SetNextItemWidth(150 * ui_scale);
             if (ImGui::SliderFloat("###animation_speed", &anim_speed, 0.0f, 4.0f, "speed %.2fx"))
                 anim_speed = ImClamp(anim_speed, 0.0f, 4.0f);
             if (ImGui::IsItemHovered() && ImGui::GetIO().MouseClicked[1])

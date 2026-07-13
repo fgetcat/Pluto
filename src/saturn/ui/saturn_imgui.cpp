@@ -92,7 +92,9 @@ bool screenshot_custom_res;
 int screenshot_multiplier = 1;
 int screenshot_size[2] = { 320, 240 };
 
-char uiDialogText[1024 * 16] = "Welcome to Pluto";
+float ui_scale = 1.0f;
+
+char uiDialogText[1024 * 16] = "Welcome to Pluto!";
 
 bool show_rule_of_thirds = false;
 ALIGNED8 const u8 rule_of_thirds[] = {
@@ -374,6 +376,20 @@ void imgui_update() {
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplSDL2_NewFrame(current_window);
 
+    // Rebuild fonts on scale change
+    static float s_applied_scale = 1.0f;
+    if (ui_scale != s_applied_scale && !ImGui::GetIO().MouseDown[0]) {
+        ImGuiIO& io = ImGui::GetIO();
+        io.Fonts->Clear();
+        ImFontConfig cfg;
+        cfg.SizePixels = floorf(13.0f * ui_scale);
+        io.Fonts->AddFontDefault(&cfg);
+        io.Fonts->Build();
+        ImGui_ImplOpenGL3_DestroyFontsTexture();
+        ImGui_ImplOpenGL3_CreateFontsTexture();
+        s_applied_scale = ui_scale;
+    }
+
     pthread_mutex_lock(&s_kick_mtx);
     s_kick_flag = true;
     pthread_cond_signal(&s_kick_cond);
@@ -418,7 +434,7 @@ static void imgui_build_widgets() {
 
     if (show_menu) {
         if (gMarioStates[0].marioObj != NULL) {
-        SDL_StartTextInput();
+        //SDL_StartTextInput(); // did i really need this >:(
 
         // Model Settings
         PopupModelSettings();
@@ -465,12 +481,17 @@ static void imgui_build_widgets() {
         if (ImGui::BeginMainMenuBar()) {
             if (ImGui::BeginMenu("Menu")) {
                 if (ImGui::MenuItem("Show Menu", NULL, show_menu)) show_menu = false;
+                ImGui::PushItemWidth(150);
+                ImGui::SliderFloat("UI Scale", &ui_scale, 1.0f, 3.0f, "%.1f", ImGuiSliderFlags_AlwaysClamp | ImGuiSliderFlags_NoInput);
+                if (ImGui::IsItemHovered() && ImGui::IsMouseReleased(ImGuiMouseButton_Right))
+                    ui_scale = 1.0f;
+                ImGui::PopItemWidth();
                 if (ImGui::BeginMenu("Screenshot")) {
                     ImGui::Checkbox("Custom Size", &screenshot_custom_res);
                     if (screenshot_custom_res) {
                         ImGui::InputInt2("###screenshot_size", screenshot_size, ImGuiInputTextFlags_CharsDecimal);
                     } else {
-                        ImGui::SetNextItemWidth(100);
+                        ImGui::SetNextItemWidth(100 * ui_scale);
                         ImGui::SliderInt("Multiplier", &screenshot_multiplier, 1, 4);
                         ImGui::TextDisabled("%dx%d", screenshot_size[0], screenshot_size[1]);
                     }
@@ -490,13 +511,13 @@ static void imgui_build_widgets() {
             // Machinima Camera
             if (ImGui::BeginMenu("Camera")) {
                 // To-do: This UI is super ugly
-                ImGui::PushItemWidth(150);
+                ImGui::PushItemWidth(150 * ui_scale);
 
                 ImGui::Checkbox("Freeze Camera", &freeze_camera);
                 ImGui::BeginDisabled(!freeze_camera);
 
                 // Camera Keyframing
-                ImGui::SameLine(166);
+                ImGui::SameLine(166 * ui_scale);
                 TimelineButton("Camera###timeline_camera", (Timeline) {
                     (void*)camera_kf_state, sizeof(camera_kf_state), false, false,
                     [](void* out, void* a, void* b, float x) {
@@ -687,7 +708,7 @@ static void imgui_build_widgets() {
         if (show_window_dialog) {
             ImGui::Begin("Dialog Textbox", &show_window_dialog, ImGuiWindowFlags_AlwaysAutoResize);
             ImGui::InputTextMultiline("###dialog_box", uiDialogText, IM_ARRAYSIZE(uiDialogText),
-                ImVec2(150, ImGui::GetTextLineHeight() * 6.5f), ImGuiInputTextFlags_None);
+                ImVec2(150 * ui_scale, ImGui::GetTextLineHeight() * 6.5f), ImGuiInputTextFlags_None);
             if (show_window_timeline) {
                 ImGui::SameLine(); TimelineButton("Textbox Text###timeline_dialog_text", uiDialogText, sizeof(uiDialogText));
                 ImGui::Checkbox("Open on Timeline", &dialog_open);

@@ -27,6 +27,7 @@ struct PlayerWindow {
 
 extern std::vector<PlayerWindow> player_windows;
 extern bool saturn_any_bone_dot_hovered;
+extern float ui_scale;
 
 extern "C" {
 #endif

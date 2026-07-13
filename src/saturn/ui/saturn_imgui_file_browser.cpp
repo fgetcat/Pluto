@@ -9,6 +9,7 @@
 #include "saturn/libs/imgui/imgui.h"
 #include "saturn/ui/saturn_imgui_models.h"
 #include "saturn/ui/saturn_imgui_colors.h"
+#include "saturn/ui/saturn_imgui.h"
 #include "saturn/saturn.h"
 #include "saturn/saturn_models.h"
 #include "saturn/saturn_textures.h"
@@ -304,7 +305,7 @@ bool saturn_file_browser_show(std::string id, int exp_index) {
         }
     }
 
-    ImGui::BeginChild(("###file_browser_" + id).c_str(), ImVec2(200, browser_height), ImGuiChildFlags_Border);
+    ImGui::BeginChild(("###file_browser_" + id).c_str(), ImVec2(200 * ui_scale, browser_height * ui_scale), ImGuiChildFlags_Border);
     saturn_file_browser_tools(id, true, exp_index);
     bool result = saturn_file_browser_create_imgui(root, "", id, true, exp_index);
     ImGui::EndChild();
