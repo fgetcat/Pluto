@@ -691,6 +691,9 @@ static void gfx_opengl_ensure_depth_snapshot(void) {
     uint32_t h = gfx_current_dimensions.height;
     if (depth_snapshot_tex && depth_snapshot_w == w && depth_snapshot_h == h) return;
 
+    GLint prev_fbo;
+    glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prev_fbo);
+
     if (!depth_snapshot_fbo) glGenFramebuffers(1, &depth_snapshot_fbo);
     if (depth_snapshot_tex)  glDeleteTextures(1, &depth_snapshot_tex);
 
@@ -709,7 +712,8 @@ static void gfx_opengl_ensure_depth_snapshot(void) {
     GLenum none = GL_NONE;
     glDrawBuffer(none);
     glReadBuffer(none);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, prev_fbo);
 
     depth_snapshot_w = w;
     depth_snapshot_h = h;
