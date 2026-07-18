@@ -1,0 +1,190 @@
+#include "asset_extractor.h"
+#include "assets.h"
+#include "sound.h"
+
+#include <stdint.h>
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+
+#include "saturn/libs/dynamics.h"
+#include "game/demo.h"
+
+#define CHECKSUM 0x3ce60709
+
+typedef struct {
+    uint32_t unused;
+    uint32_t dest_size;
+    uint32_t comp_offset;
+    uint32_t uncomp_offset;
+} MIO0_Header;
+
+map(uint64_t, uint8_t*) MIO0_Cache;
+
+static int curr_asset;
+static const char* curr_asset_name;
+static set(MIO0_Cache) mio0_cache;
+static set(Asset) assets;
+
+static uint8_t rom[8*1024*1024];
+
+typedef const Texture* SkyboxTexture[80];
+extern SkyboxTexture* sSkyboxTextures[10];
+SkyboxTexture bbh_skybox_ptrlist;
+SkyboxTexture bitdw_skybox_ptrlist;
+SkyboxTexture bitfs_skybox_ptrlist;
+SkyboxTexture bits_skybox_ptrlist;
+SkyboxTexture ccm_skybox_ptrlist;
+SkyboxTexture cloud_floor_skybox_ptrlist;
+SkyboxTexture clouds_skybox_ptrlist;
+SkyboxTexture ssl_skybox_ptrlist;
+SkyboxTexture water_skybox_ptrlist;
+SkyboxTexture wdw_skybox_ptrlist;
+
+static uint32_t crc32(const void* data, uint32_t size) {
+    const uint8_t* msg = data;
+    uint32_t crc = 0xFFFFFFFF;
+    for (uint32_t i = 0; i < size; i++) {
+        uint8_t byte = msg[i];
+        crc = crc ^ byte;
+        for (int32_t j = 7; j >= 0; j--) {
+            uint32_t mask = -(crc & 1);
+            crc = (crc >> 1) ^ (0xEDB88320 & mask);
+        }
+    }
+    return ~crc;
+}
+
+static uint8_t* decompress_mio0(uint8_t* buf) {
+    int bytes_written = 0;
+    int bit_idx = 0;
+    int comp_idx = 0;
+    int uncomp_idx = 0;
+    MIO0_Header head = {};
+    head.dest_size = __builtin_bswap32(*(uint32_t*)&buf[4]);
+    head.comp_offset = __builtin_bswap32(*(uint32_t*)&buf[8]);
+    head.uncomp_offset = __builtin_bswap32(*(uint32_t*)&buf[12]);
+    uint8_t* out = malloc(head.dest_size);
+    while (bytes_written < head.dest_size) {
+        if ((&buf[16])[bit_idx / 8] & (1 << (7 - (bit_idx % 8)))) {
+            out[bytes_written] = buf[head.uncomp_offset + uncomp_idx];
+            bytes_written++;
+            uncomp_idx++;
+        }
+        else {
+            int idx;
+            int length;
+            int i;
+            unsigned char* vals = &buf[head.comp_offset + comp_idx];
+            comp_idx += 2;
+            length = ((vals[0] & 0xF0) >> 4) + 3;
+            idx = ((vals[0] & 0x0F) << 8) + vals[1] + 1;
+            for (i = 0; i < length; i++) {
+                out[bytes_written] = out[bytes_written - idx];
+                bytes_written++;
+            }
+        }
+        bit_idx++;
+    }
+    return out;
+}
+
+static uint8_t* run_mio0(uint64_t offset, uint64_t asset_offset) {
+    if (!mio0_cache) mio0_cache = set_init(MIO0_Cache, compare_u64);
+
+    MIO0_Cache* entry = find(mio0_cache, &offset);
+    if (entry) return entry->value + asset_offset;
+
+    uint8_t* buf = decompress_mio0(rom + offset);
+    push(mio0_cache) = (MIO0_Cache){ .key = offset, .value = buf };
+
+    return buf + asset_offset;
+}
+
+static void extract_skybox(SkyboxTexture* skybox, uint8_t* buffer, uint64_t size) {
+    uint32_t* table = (uint32_t*)(buffer + (size - 8 * 10 * 4));
+    uint32_t base = __builtin_bswap32(table[0]);
+    for (int i = 0; i < 80; i++) {
+        uint32_t index = __builtin_bswap32(table[i]) - base;
+        (*skybox)[i] = buffer + index;
+    }
+}
+
+bool assetextract_check_needs_extract() {
+    return false;
+}
+
+ROMError assetextract_read_rom(const char* filename) {
+    FILE* f = fopen(filename, "rb");
+    if (!f) return ROM_CANNOT_OPEN;
+    fseek(f, 0, SEEK_END);
+
+    // is the file 8 MB?
+    if (ftell(f) != sizeof(rom)) {
+        fclose(f);
+        return ROM_INVALID_FILESIZE;
+    }
+
+    fseek(f, 0, SEEK_SET);
+    fread(rom, sizeof(rom), 1, f);
+    fclose(f);
+
+    return crc32(rom, sizeof(rom)) == CHECKSUM ? ROM_SUCCESS : ROM_CHECKSUM_FAILED;
+}
+
+void assetextract_run() {
+    if (!assets) {
+        assets = set_init(Asset, compare_str);
+        assetextract_populate_assets(&assets);
+    }
+
+    uint8_t *ctl_buf, *tbl_buf;
+    size_t   ctl_len,  tbl_len;
+    smart set(Sound_SampleAsset) samples = set_init(Sound_SampleAsset, compare_u64);
+    foreach (*asset, assets) {
+        curr_asset_name = asset->name;
+        printf("extracting %s\n", curr_asset_name);
+        
+        switch (asset->type) {
+            case AssetType_CTL: ctl_buf = rom + asset->offset, ctl_len = asset->size; break;
+            case AssetType_TBL: tbl_buf = rom + asset->offset, tbl_len = asset->size; break;
+            case AssetType_Sound: push(samples) = (Sound_SampleAsset){ .name = asset->name, .loc = asset->offset }; break;
+            case AssetType_Tiled: extract_skybox(sSkyboxTextures[asset->index], run_mio0(asset->offset, 0), asset->size);
+            case AssetType_MIO0: asset->data = memcpy(malloc(asset->size), run_mio0(asset->offset, asset->mio0_offset), asset->size); break;
+            case AssetType_Raw: asset->data = rom + asset->offset; break;
+            case AssetType_Demo: asset->data = memcpy(
+                (char*)&gDemoInputs + gDemoInputs.entries[asset->index].offset,
+                rom + asset->offset,  gDemoInputs.entries[asset->index].size
+            ); break;
+            case AssetType_Dummy: break;
+        }
+    }
+
+    printf("reassembling sound\n");
+    Asset* asset_ctl = find(assets, &(char*){"sound/sound_data.ctl"});
+    Asset* asset_tbl = find(assets, &(char*){"sound/sound_data.tbl"});
+    Asset* asset_seq = find(assets, &(char*){"sound/sequences.bin"});
+    Asset* asset_bnk = find(assets, &(char*){"sound/bank_sets"});
+    sound_reassemble(samples,
+        ctl_buf, ctl_len, tbl_buf, tbl_len,
+        &asset_ctl->data, &asset_ctl->size,
+        &asset_tbl->data, &asset_tbl->size,
+        &asset_seq->data, &asset_seq->size,
+        &asset_bnk->data, &asset_bnk->size
+    );
+    printf("done\n");
+}
+
+float assetextract_progress(const char** curr_file) {
+    if (curr_file) *curr_file = curr_asset_name;
+    return (float)curr_asset / size(assets);
+}
+
+void* assetextract_get_asset(const char* name, size_t* size) {
+    Asset* asset = find(assets, &name);
+    if (asset) {
+        if (size) *size = asset->size;
+        return asset->data;
+    }
+    return NULL;
+}

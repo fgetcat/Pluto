@@ -426,13 +426,13 @@ PYTHON := python3
 ifeq ($(filter clean distclean print-%,$(MAKECMDGOALS)),)
 
   # Make sure assets exist
-  NOEXTRACT ?= 0
-  ifeq ($(NOEXTRACT),0)
-    DUMMY != $(PYTHON) extract_assets.py $(VERSION) >&2 || echo FAIL
-    ifeq ($(DUMMY),FAIL)
-      $(error Failed to extract assets)
-    endif
-  endif
+  #NOEXTRACT ?= 0
+  #ifeq ($(NOEXTRACT),0)
+  #  DUMMY != $(PYTHON) extract_assets.py $(VERSION) >&2 || echo FAIL
+  #  ifeq ($(DUMMY),FAIL)
+  #    $(error Failed to extract assets)
+  #  endif
+  #endif
 
   ifeq ($(WINDOWS_AUTO_BUILDER),0)
     $(info Building tools...)
@@ -440,6 +440,11 @@ ifeq ($(filter clean distclean print-%,$(MAKECMDGOALS)),)
       ifeq ($(DUMMY),FAIL)
         $(error Failed to build tools)
       endif
+  endif
+
+  DUMMY != $(TOOLS_DIR)/generate_inc_c >&2 || echo FAIL
+  ifeq ($(DUMMY),FAIL)
+  	$(error Failed to generate .inc.c files)
   endif
 
   $(info Building Game...)
@@ -451,7 +456,7 @@ endif
 #==============================================================================#
 
 # Copy missing instrument samples from the music sound banks
-_ := $(shell $(PYTHON) $(TOOLS_DIR)/copy_extended_sounds.py)
+#_ := $(shell $(PYTHON) $(TOOLS_DIR)/copy_extended_sounds.py)
 
 #==============================================================================#
 # Target Executable and Sources                                                #
@@ -481,7 +486,7 @@ ACTOR_DIR      := actors
 LEVEL_DIRS     := $(patsubst levels/%,%,$(dir $(wildcard levels/*/header.h)))
 
 # Directories containing source files
-SRC_DIRS := src src/engine src/game src/audio src/bass_audio src/menu src/buffers src/saturn src/saturn/ui src/saturn/libs src/saturn/libs/imgui actors levels bin data assets asm lib sound
+SRC_DIRS := src src/engine src/game src/audio src/bass_audio src/menu src/buffers src/saturn src/saturn/asset_extractor src/saturn/ui src/saturn/libs src/saturn/libs/imgui actors levels bin data assets asm lib sound
 BIN_DIRS := bin bin/$(VERSION)
 
 # PC files
@@ -510,7 +515,10 @@ S_FILES           := $(foreach dir,$(SRC_DIRS),$(wildcard $(dir)/*.s))
 ULTRA_C_FILES     := $(foreach dir,$(ULTRA_SRC_DIRS),$(wildcard $(dir)/*.c))
 GODDARD_C_FILES   := $(foreach dir,$(GODDARD_SRC_DIRS),$(wildcard $(dir)/*.c))
 ULTRA_S_FILES     := $(foreach dir,$(ULTRA_SRC_DIRS),$(wildcard $(dir)/*.s))
-GENERATED_C_FILES := $(BUILD_DIR)/assets/mario_anim_data.c $(BUILD_DIR)/assets/demo_data.c
+GENERATED_C_FILES := $(BUILD_DIR)/assets/mario_anim_data.c $(BUILD_DIR)/sound/custom_sounds.c
+
+CUSTOM_SOUNDS_SRC := $(shell find sound/samples -name "*.aiff")
+CUSTOM_SOUNDS := $(patsubst %.aiff,$(BUILD_DIR)/%.aifc,$(CUSTOM_SOUNDS_SRC))
 
 ifeq ($(TARGET_N64),0)
   GENERATED_C_FILES += $(addprefix $(BUILD_DIR)/bin/,$(addsuffix _skybox.c,$(notdir $(basename $(wildcard textures/skyboxes/*.png)))))
@@ -1087,6 +1095,8 @@ AIFF_EXTRACT_CODEBOOK := $(TOOLS_DIR)/aiff_extract_codebook
 VADPCM_ENC            := $(TOOLS_DIR)/vadpcm_enc
 EXTRACT_DATA_FOR_MIO  := $(TOOLS_DIR)/extract_data_for_mio
 SKYCONV               := $(TOOLS_DIR)/skyconv
+GENERATE_INC_C        := $(TOOLS_DIR)/generate_inc_c
+GENERATE_SOUND_TABLE  := $(TOOLS_DIR)/generate_sound_table
 
 # Use the system installed armips if available. Otherwise use the one provided with this repository.
 ifneq (,$(call find-command,armips))
@@ -1141,7 +1151,7 @@ cleantools:
 	$(MAKE) -s -C $(TOOLS_DIR) clean
 
 distclean: clean cleantools
-	$(PYTHON) extract_assets.py --clean
+#	$(PYTHON) extract_assets.py --clean
 
 test: $(ROM)
 	$(EMULATOR) $(EMU_FLAGS) $<
@@ -1177,9 +1187,11 @@ ifeq ($(TARGET_N64),1)
 	$(BUILD_DIR)/lib/rsp.o:               $(BUILD_DIR)/rsp/rspboot.bin $(BUILD_DIR)/rsp/fast3d.bin $(BUILD_DIR)/rsp/audio.bin
 endif
 
-$(BUILD_DIR)/src/game/characters.o:   $(SOUND_SAMPLE_TABLES)
-$(SOUND_BIN_DIR)/sound_data.o:        $(SOUND_BIN_DIR)/sound_data.ctl.inc.c $(SOUND_BIN_DIR)/sound_data.tbl.inc.c $(SOUND_BIN_DIR)/sequences.bin.inc.c $(SOUND_BIN_DIR)/bank_sets.inc.c
+#$(BUILD_DIR)/src/game/characters.o:   $(SOUND_SAMPLE_TABLES)
+#$(SOUND_BIN_DIR)/sound_data.o:        $(SOUND_BIN_DIR)/sound_data.ctl.inc.c $(SOUND_BIN_DIR)/sound_data.tbl.inc.c $(SOUND_BIN_DIR)/sequences.bin.inc.c $(SOUND_BIN_DIR)/bank_sets.inc.c
 $(BUILD_DIR)/levels/scripts.o:        $(BUILD_DIR)/include/level_headers.h
+$(BUILD_DIR)/src/saturn/asset_extractor/sound.o: $(BUILD_DIR)/sound/custom_sounds.c
+$(BUILD_DIR)/sound/custom_sounds.o: $(patsubst %,%.inc.c,$(CUSTOM_SOUNDS))
 
 ifeq ($(VERSION),sh)
   $(BUILD_DIR)/src/audio/load.o: $(SOUND_BIN_DIR)/bank_sets.inc.c $(SOUND_BIN_DIR)/sequences_header.inc.c $(SOUND_BIN_DIR)/ctl_header.inc.c $(SOUND_BIN_DIR)/tbl_header.inc.c
@@ -1238,23 +1250,23 @@ $(BUILD_DIR)/src/game/ingame_menu.o: $(BUILD_DIR)/include/text_strings.h
 TEXTURE_ENCODING := u8
 
 # Convert PNGs to RGBA32, RGBA16, IA16, IA8, IA4, IA1, I8, I4 binary files
-$(BUILD_DIR)/%: %.png
-	$(call print,Converting:,$<,$@)
-	$(V)$(N64GRAPHICS) -s raw -i $@ -g $< -f $(lastword $(subst ., ,$@))
+#$(BUILD_DIR)/%: %.png
+#	$(call print,Converting:,$<,$@)
+#	$(V)$(N64GRAPHICS) -s raw -i $@ -g $< -f $(lastword $(subst ., ,$@))
 
-$(BUILD_DIR)/%.inc.c: %.png
-	$(call print,Converting:,$<,$@)
-	$(V)$(N64GRAPHICS) -s $(TEXTURE_ENCODING) -i $@ -g $< -f $(lastword ,$(subst ., ,$(basename $<)))
+#$(BUILD_DIR)/%.inc.c: %.png
+#	$(call print,Converting:,$<,$@)
+#	$(V)$(N64GRAPHICS) -s $(TEXTURE_ENCODING) -i $@ -g $< -f $(lastword ,$(subst ., ,$(basename $<)))
 
 # Color Index CI8
-$(BUILD_DIR)/%.ci8: %.ci8.png
-	$(call print,Converting:,$<,$@)
-	$(V)$(N64GRAPHICS_CI) -i $@ -g $< -f ci8
+#$(BUILD_DIR)/%.ci8: %.ci8.png
+#	$(call print,Converting:,$<,$@)
+#	$(V)$(N64GRAPHICS_CI) -i $@ -g $< -f ci8
 
 # Color Index CI4
-$(BUILD_DIR)/%.ci4: %.ci4.png
-	$(call print,Converting:,$<,$@)
-	$(V)$(N64GRAPHICS_CI) -i $@ -g $< -f ci4
+#$(BUILD_DIR)/%.ci4: %.ci4.png
+#	$(call print,Converting:,$<,$@)
+#	$(V)$(N64GRAPHICS_CI) -i $@ -g $< -f ci4
 
 #==============================================================================#
 # Compressed Segment Generation                                                #
@@ -1302,59 +1314,66 @@ endif
 $(BUILD_DIR)/%.table: %.aiff
 	$(call print,Extracting codebook:,$<,$@)
 	$(V)$(AIFF_EXTRACT_CODEBOOK) $< >$@
-	$(call print,Piping:,$<,$@.inc.c)
-	$(V)hexdump -v -e '1/1 "0x%X,"' $< > $@.inc.c
-	$(V)echo >> $@.inc.c
+#	$(call print,Piping:,$<,$@.inc.c)
+#	$(V)hexdump -v -e '1/1 "0x%X,"' $< > $@.inc.c
+#	$(V)echo >> $@.inc.c
 
 $(BUILD_DIR)/%.aifc: $(BUILD_DIR)/%.table %.aiff
 	$(call print,Encoding VADPCM:,$<,$@)
 	$(V)$(VADPCM_ENC) -c $^ $@
 
-$(ENDIAN_BITWIDTH): $(TOOLS_DIR)/determine-endian-bitwidth.c
-	@$(PRINT) "$(GREEN)Generating endian-bitwidth $(NO_COL)\n"
-	$(V)$(CC) $(PROF_FLAGS) -c $(CFLAGS) -o $@.dummy2 $< 2>$@.dummy1; true
-	$(V)grep -o 'msgbegin --endian .* --bitwidth .* msgend' $@.dummy1 > $@.dummy2
-	$(V)head -n1 <$@.dummy2 | cut -d' ' -f2-5 > $@
-	@$(RM) $@.dummy1
-	@$(RM) $@.dummy2
+#$(ENDIAN_BITWIDTH): $(TOOLS_DIR)/determine-endian-bitwidth.c
+#	@$(PRINT) "$(GREEN)Generating endian-bitwidth $(NO_COL)\n"
+#	$(V)$(CC) $(PROF_FLAGS) -c $(CFLAGS) -o $@.dummy2 $< 2>$@.dummy1; true
+#	$(V)grep -o 'msgbegin --endian .* --bitwidth .* msgend' $@.dummy1 > $@.dummy2
+#	$(V)head -n1 <$@.dummy2 | cut -d' ' -f2-5 > $@
+#	@$(RM) $@.dummy1
+#	@$(RM) $@.dummy2
 
-$(SOUND_BIN_DIR)/sound_data.ctl: sound/sound_banks/ $(SOUND_BANK_FILES) $(SOUND_SAMPLE_AIFCS) $(ENDIAN_BITWIDTH)
-	@$(PRINT) "$(GREEN)Generating:  $(BLUE)$@ $(NO_COL)\n"
-	$(V)$(PYTHON) $(TOOLS_DIR)/assemble_sound.py $(BUILD_DIR)/sound/samples/ sound/sound_banks/ $(SOUND_BIN_DIR)/sound_data.ctl $(SOUND_BIN_DIR)/ctl_header $(SOUND_BIN_DIR)/sound_data.tbl $(SOUND_BIN_DIR)/tbl_header $(C_DEFINES) $$(cat $(ENDIAN_BITWIDTH))
+#$(SOUND_BIN_DIR)/sound_data.ctl: sound/sound_banks/ $(SOUND_BANK_FILES) $(SOUND_SAMPLE_AIFCS) $(ENDIAN_BITWIDTH)
+#	@$(PRINT) "$(GREEN)Generating:  $(BLUE)$@ $(NO_COL)\n"
+#	$(V)$(PYTHON) $(TOOLS_DIR)/assemble_sound.py $(BUILD_DIR)/sound/samples/ sound/sound_banks/ $(SOUND_BIN_DIR)/sound_data.ctl $(SOUND_BIN_DIR)/ctl_header $(SOUND_BIN_DIR)/sound_data.tbl $(SOUND_BIN_DIR)/tbl_header $(C_DEFINES) $$(cat $(ENDIAN_BITWIDTH))
 
-$(SOUND_BIN_DIR)/sound_data.tbl: $(SOUND_BIN_DIR)/sound_data.ctl
-	@true
+#$(SOUND_BIN_DIR)/sound_data.tbl: $(SOUND_BIN_DIR)/sound_data.ctl
+#	@true
 
-$(SOUND_BIN_DIR)/ctl_header: $(SOUND_BIN_DIR)/sound_data.ctl
-	@true
+#$(SOUND_BIN_DIR)/ctl_header: $(SOUND_BIN_DIR)/sound_data.ctl
+#	@true
 
-$(SOUND_BIN_DIR)/tbl_header: $(SOUND_BIN_DIR)/sound_data.ctl
-	@true
+#$(SOUND_BIN_DIR)/tbl_header: $(SOUND_BIN_DIR)/sound_data.ctl
+#	@true
 
-$(SOUND_BIN_DIR)/sequences.bin: $(SOUND_BANK_FILES) sound/sequences.json $(SOUND_SEQUENCE_DIRS) $(SOUND_SEQUENCE_FILES) $(ENDIAN_BITWIDTH)
-	@$(PRINT) "$(GREEN)Generating:  $(BLUE)$@ $(NO_COL)\n"
-	$(V)$(PYTHON) $(TOOLS_DIR)/assemble_sound.py --sequences $@ $(SOUND_BIN_DIR)/sequences_header $(SOUND_BIN_DIR)/bank_sets sound/sound_banks/ sound/sequences.json $(SOUND_SEQUENCE_FILES) $(C_DEFINES) $$(cat $(ENDIAN_BITWIDTH))
+#$(SOUND_BIN_DIR)/sequences.bin: $(SOUND_BANK_FILES) sound/sequences.json $(SOUND_SEQUENCE_DIRS) $(SOUND_SEQUENCE_FILES) $(ENDIAN_BITWIDTH)
+#	@$(PRINT) "$(GREEN)Generating:  $(BLUE)$@ $(NO_COL)\n"
+#	$(V)$(PYTHON) $(TOOLS_DIR)/assemble_sound.py --sequences $@ $(SOUND_BIN_DIR)/sequences_header $(SOUND_BIN_DIR)/bank_sets sound/sound_banks/ sound/sequences.json $(SOUND_SEQUENCE_FILES) $(C_DEFINES) $$(cat $(ENDIAN_BITWIDTH))
 
-$(SOUND_BIN_DIR)/bank_sets: $(SOUND_BIN_DIR)/sequences.bin
-	@true
+#$(SOUND_BIN_DIR)/bank_sets: $(SOUND_BIN_DIR)/sequences.bin
+#	@true
 
-$(SOUND_BIN_DIR)/sequences_header: $(SOUND_BIN_DIR)/sequences.bin
-	@true
+#$(SOUND_BIN_DIR)/sequences_header: $(SOUND_BIN_DIR)/sequences.bin
+#	@true
 
-$(SOUND_BIN_DIR)/%.m64: $(SOUND_BIN_DIR)/%.o
-	$(call print,Converting to M64:,$<,$@)
-	$(V)$(OBJCOPY) -j .rodata $< -O binary $@
-
+#$(SOUND_BIN_DIR)/%.m64: $(SOUND_BIN_DIR)/%.o
+#	$(call print,Converting to M64:,$<,$@)
+#	$(V)$(OBJCOPY) -j .rodata $< -O binary $@
 
 #==============================================================================#
 # Generated Source Code Files                                                  #
 #==============================================================================#
 
 # Convert binary file to a comma-separated list of byte values for inclusion in C code
-$(BUILD_DIR)/%.inc.c: $(BUILD_DIR)/%
+#$(BUILD_DIR)/%.inc.c: $(BUILD_DIR)/%
+#	$(call print,Piping:,$<,$@)
+#	$(V)hexdump -v -e '1/1 "0x%X,"' $< > $@
+#	$(V)echo >> $@
+
+$(BUILD_DIR)/%.aifc.inc.c: $(BUILD_DIR)/%.aifc
 	$(call print,Piping:,$<,$@)
 	$(V)hexdump -v -e '1/1 "0x%X,"' $< > $@
 	$(V)echo >> $@
+
+$(BUILD_DIR)/%.inc.c:
+	$(V)$(GENERATE_INC_C) $@
 
 # Generate animation data
 $(BUILD_DIR)/assets/mario_anim_data.c: $(wildcard assets/anims/*.inc.c)
@@ -1362,9 +1381,14 @@ $(BUILD_DIR)/assets/mario_anim_data.c: $(wildcard assets/anims/*.inc.c)
 	$(V)$(PYTHON) $(TOOLS_DIR)/mario_anims_converter.py > $@
 
 # Generate demo input data
-$(BUILD_DIR)/assets/demo_data.c: assets/demo_data.json $(wildcard assets/demos/*.bin)
-	@$(PRINT) "$(GREEN)Generating demo data $(NO_COL)\n"
-	$(V)$(PYTHON) $(TOOLS_DIR)/demo_data_converter.py assets/demo_data.json $(DEF_INC_CFLAGS) > $@
+#$(BUILD_DIR)/assets/demo_data.c: assets/demo_data.json $(wildcard assets/demos/*.bin)
+#	@$(PRINT) "$(GREEN)Generating demo data $(NO_COL)\n"
+#	$(V)$(PYTHON) $(TOOLS_DIR)/demo_data_converter.py assets/demo_data.json $(DEF_INC_CFLAGS) > $@
+
+# Generate custom sound tables
+$(BUILD_DIR)/sound/custom_sounds.c: $(CUSTOM_SOUNDS_SRC)
+	@$(PRINT) "$(GREEN)Generating custom sound table $(NO_COL)\n"
+	$(V)$(GENERATE_SOUND_TABLE) $@ $(@:.c=.h) $^
 
 # Encode in-game text strings
 $(BUILD_DIR)/include/text_strings.h: include/text_strings.h.in

@@ -66,6 +66,7 @@
 #include "saturn/ui/saturn_imgui.h"
 #include "saturn/saturn_colors.h"
 #include "saturn/saturn_models.h"
+#include "saturn/asset_extractor/asset_extractor.h"
 
 OSMesg D_80339BEC;
 OSMesgQueue gSIEventMesgQueue;
@@ -440,6 +441,9 @@ int main(int argc, char *argv[]) {
 
     // Handle terminal arguments
     if (!parse_cli_opts(argc, argv)) { return 0; }
+
+    assetextract_read_rom("sm64.z64");
+    assetextract_run();
 
 #if defined(_WIN32) || defined(_WIN64)
     // Handle Windows console
