@@ -442,9 +442,6 @@ int main(int argc, char *argv[]) {
     // Handle terminal arguments
     if (!parse_cli_opts(argc, argv)) { return 0; }
 
-    assetextract_read_rom("sm64.z64");
-    assetextract_run();
-
 #if defined(_WIN32) || defined(_WIN64)
     // Handle Windows console
     if (!gCLIOpts.console) {
@@ -452,6 +449,11 @@ int main(int argc, char *argv[]) {
     }
 
 #endif
+
+    char name[256];
+    snprintf(name, 255, "%s/sm64.z64", sys_user_path());
+    name[255] = 0;
+    assetextract_init(name);
 
     // Create the window straight away
     if (!gGfxInited) {

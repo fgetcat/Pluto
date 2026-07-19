@@ -6,9 +6,15 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <errno.h>
 #include <time.h>
 
+#include <unistd.h>
+#include <sys/types.h>
+
+#include "saturn/libs/tinyfiledialogs.h"
 #include "saturn/libs/dynamics.h"
+
 #include "game/demo.h"
 
 #define CHECKSUM 0x3ce60709
@@ -20,10 +26,16 @@ typedef struct {
     uint32_t uncomp_offset;
 } MIO0_Header;
 
+typedef enum {
+    ROM_SUCCESS,
+    ROM_CANNOT_OPEN,
+    ROM_INVALID_FILESIZE,
+    ROM_CHECKSUM_FAILED,
+} ROMError;
+
 map(uint64_t, uint8_t*) MIO0_Cache;
 
 static int curr_asset;
-static const char* curr_asset_name;
 static set(MIO0_Cache) mio0_cache;
 static set(Asset) assets;
 
@@ -111,13 +123,12 @@ static void extract_skybox(SkyboxTexture* skybox, uint8_t* buffer, uint64_t size
     }
 }
 
-bool assetextract_check_needs_extract() {
-    return false;
-}
-
-ROMError assetextract_read_rom(const char* filename) {
+static ROMError assetextract_read_rom(const char* filename) {
     FILE* f = fopen(filename, "rb");
-    if (!f) return ROM_CANNOT_OPEN;
+    if (!f) {
+        fprintf(stderr, "could not open %s for reading: %s\n", filename, strerror(errno));
+        return ROM_CANNOT_OPEN;
+    }
     fseek(f, 0, SEEK_END);
 
     // is the file 8 MB?
@@ -133,7 +144,7 @@ ROMError assetextract_read_rom(const char* filename) {
     return crc32(rom, sizeof(rom)) == CHECKSUM ? ROM_SUCCESS : ROM_CHECKSUM_FAILED;
 }
 
-void assetextract_run() {
+static void assetextract_run() {
     uint64_t start = clock();
     
     if (!assets) {
@@ -145,14 +156,13 @@ void assetextract_run() {
     size_t   ctl_len,  tbl_len;
     smart set(Sound_SampleAsset) samples = set_init(Sound_SampleAsset, compare_u32);
     foreach (*asset, assets) {
-        curr_asset_name = asset->name;
-        printf("extracting %s\n", curr_asset_name);
-        
+        printf("extracting %s\n", asset->name);
+
         switch (asset->type) {
             case AssetType_CTL: ctl_buf = rom + asset->offset, ctl_len = asset->size; break;
             case AssetType_TBL: tbl_buf = rom + asset->offset, tbl_len = asset->size; break;
             case AssetType_Sound: push(samples) = (Sound_SampleAsset){ .name = asset->name, .loc = asset->offset }; break;
-            case AssetType_Tiled: printf("%s:", asset->name); extract_skybox(sSkyboxTextures[asset->index], run_mio0(asset->offset, 0), asset->size); break;
+            case AssetType_Tiled: extract_skybox(sSkyboxTextures[asset->index], run_mio0(asset->offset, 0), asset->size); break;
             case AssetType_MIO0: asset->data = memcpy(malloc(asset->size), run_mio0(asset->offset, asset->mio0_offset), asset->size); break;
             case AssetType_Raw: asset->data = rom + asset->offset; break;
             case AssetType_Demo: asset->data = memcpy(
@@ -182,29 +192,44 @@ void assetextract_run() {
 
     uint64_t end = clock();
     printf("done in %g ms\n", (double)(end - start) / CLOCKS_PER_SEC * 1000);
-
-    FILE* f;
-
-    f = fopen("sequences.bin", "w");
-    fwrite(asset_seq->data, asset_seq->size, 1, f);
-    fclose(f);
-
-    f = fopen("bank_sets", "w");
-    fwrite(asset_bnk->data, asset_bnk->size, 1, f);
-    fclose(f);
-
-    f = fopen("sound_data.ctl", "w");
-    fwrite(asset_ctl->data, asset_ctl->size, 1, f);
-    fclose(f);
-
-    f = fopen("sound_data.tbl", "w");
-    fwrite(asset_tbl->data, asset_tbl->size, 1, f);
-    fclose(f);
 }
 
-float assetextract_progress(const char** curr_file) {
-    if (curr_file) *curr_file = curr_asset_name;
-    return (float)curr_asset / size(assets);
+bool assetextract_init(const char* rom_dest_path) {
+    if (access(rom_dest_path, R_OK) == 0 && assetextract_read_rom(rom_dest_path) == ROM_SUCCESS) goto run;
+
+    if (!tinyfd_messageBox("Pluto",
+        "For legal purposes, Pluto needs an SM64 ROM in order to run.\n"
+        "Please input an unmodified, US ROM to continue.",
+        "okcancel", "info", 0
+    )) return false;
+
+    char* file = NULL;
+    while (true) {
+        file = tinyfd_openFileDialog("SM64 ROM Input", NULL, 1, (const char*[]){"*.z64"}, "SM64 ROM", false);
+        if (!file) return false;
+
+        const char* message = NULL;
+        switch (assetextract_read_rom(file)) {
+            case ROM_SUCCESS: break;
+            case ROM_CANNOT_OPEN: message = "Unable to read the ROM."; break;
+            case ROM_INVALID_FILESIZE: message = "The ROM needs to be 8192 kB big.\nMake sure you are using a non-extended ROM."; break;
+            case ROM_CHECKSUM_FAILED: message = "This is not a valid SM64 ROM.\nIs it in the .z64 format?"; break;
+        }
+
+        if (!message) break;
+        tinyfd_notifyPopup("Pluto", message, "error");
+    }
+
+    FILE* f = fopen(rom_dest_path, "wb");
+    if (f) {
+        fwrite(rom, sizeof(rom), 1, f);
+        fclose(f);
+    }
+    else fprintf(stderr, "could not open %s for writing: %s\n", rom_dest_path, strerror(errno));
+
+    run:
+    assetextract_run();
+    return true;
 }
 
 void* assetextract_get_asset(const char* name, size_t* size) {
