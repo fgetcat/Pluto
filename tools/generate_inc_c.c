@@ -42,26 +42,26 @@ void mkdirs(char* path) {
     }
 }
 
-void generate_file(const char* name) {
-    if (access(name, F_OK) == 0) return;
+void generate_file(const char* dst, const char* src) {
+    if (access(dst, F_OK) == 0) return;
     
-    int len = strlen(name);
+    int len = strlen(dst);
     char dirname[len + 1];
-    strcpy(dirname, name);
+    strcpy(dirname, dst);
     mkdirs(parentdir(dirname));
 
-    FILE* f = fopen(name, "w");
-    for (uint64_t i = LENGTH("build/us_pc/"); i < len - LENGTH(".inc.c"); i++) {
-        fprintf(f, "0x%02x,", name[i]);
-    }
+    char c;
+    FILE* f = fopen(dst, "w");
+    while ((c = *src++))
+        fprintf(f, "0x%02x,", c);
     fprintf(f, "0x00\n");
     fclose(f);
 }
 
 int main(int argc, char** argv) {
-    if (argc >= 2) {
-        generate_file(argv[1]);
-        return 0;
+    if (argc == 1) {
+        printf("Usage: %s base\n", argv[0]);
+        return 1;
     }
     
     for (uint64_t i = 0; i < sizeof(assets) / sizeof(*assets); i++) {
@@ -73,10 +73,10 @@ int main(int argc, char** argv) {
             strncmp(asset->name, "textures", 8) != 0
         ) continue;
 
-        int dest_size = LENGTH("build/us_pc/.inc.c") + strlen(asset->name) + 1;
+        int dest_size = LENGTH("/.inc.c") + strlen(argv[1]) + strlen(asset->name) + 1;
         char filename[dest_size];
-        sprintf(filename, "build/us_pc/%s.inc.c", asset->name);
-        generate_file(filename);
+        sprintf(filename, "%s/%s.inc.c", argv[1], asset->name);
+        generate_file(filename, asset->name);
     }
 
     return 0;

@@ -36,6 +36,7 @@ int main(int argc, char** argv) {
     fprintf(h, "extern struct CustomSoundTable {\n");
     fprintf(h, "    const char* name;\n");
     fprintf(h, "    const u8* data;\n");
+    fprintf(h, "    size_t size;\n");
     fprintf(h, "} gCustomSoundTable[%d];\n", argc - 3);
 
     for (int i = 3; i < argc; i++) {
@@ -61,7 +62,7 @@ int main(int argc, char** argv) {
             close_and_delete(h, argv[2]);
         }
 
-        fprintf(c, "    { \"%s/%s\", sound_%s_%s },\n", bank_name, sound_name, bank_name, sound_name);
+        fprintf(c, "    { \"%1$s/%2$s\", sound_%1$s_%2$s, sizeof(sound_%1$s_%2$s) },\n", bank_name, sound_name);
     }
     fprintf(c, "};\n");
 

@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <time.h>
 
 #include "saturn/libs/dynamics.h"
 #include "game/demo.h"
@@ -133,6 +134,8 @@ ROMError assetextract_read_rom(const char* filename) {
 }
 
 void assetextract_run() {
+    uint64_t start = clock();
+    
     if (!assets) {
         assets = set_init(Asset, compare_str);
         assetextract_populate_assets(&assets);
@@ -149,7 +152,7 @@ void assetextract_run() {
             case AssetType_CTL: ctl_buf = rom + asset->offset, ctl_len = asset->size; break;
             case AssetType_TBL: tbl_buf = rom + asset->offset, tbl_len = asset->size; break;
             case AssetType_Sound: push(samples) = (Sound_SampleAsset){ .name = asset->name, .loc = asset->offset }; break;
-            case AssetType_Tiled: extract_skybox(sSkyboxTextures[asset->index], run_mio0(asset->offset, 0), asset->size);
+            case AssetType_Tiled: printf("%s:", asset->name); extract_skybox(sSkyboxTextures[asset->index], run_mio0(asset->offset, 0), asset->size);
             case AssetType_MIO0: asset->data = memcpy(malloc(asset->size), run_mio0(asset->offset, asset->mio0_offset), asset->size); break;
             case AssetType_Raw: asset->data = rom + asset->offset; break;
             case AssetType_Demo: asset->data = memcpy(
@@ -176,9 +179,19 @@ void assetextract_run() {
         &asset_seq->data, &asset_seq->size,
         &asset_bnk->data, &asset_bnk->size
     );
-    printf("done\n");
+
+    uint64_t end = clock();
+    printf("done in %g ms\n", (double)(end - start) / CLOCKS_PER_SEC * 1000);
 
     FILE* f;
+
+    f = fopen("sequences.bin", "w");
+    fwrite(asset_seq->data, asset_seq->size, 1, f);
+    fclose(f);
+
+    f = fopen("bank_sets", "w");
+    fwrite(asset_bnk->data, asset_bnk->size, 1, f);
+    fclose(f);
 
     f = fopen("sound_data.ctl", "w");
     fwrite(asset_ctl->data, asset_ctl->size, 1, f);

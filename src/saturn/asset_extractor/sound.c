@@ -482,7 +482,10 @@ static void serialize_ctl(Serializer* ser, Sound_Bank* bank, set(NameToSampleMap
 static void serialize_tbl(Serializer* ser, Sound_Bank* bank, set(NameToSampleMap) extracted_samples) {
     size_t base = ser->size;
     foreach (*sample, extracted_samples) {
-        if (strncmp(bank->sample_bank, sample->key, strlen(bank->sample_bank)) != 0) continue;
+        int len = strlen(bank->sample_bank);
+        if (strncmp(bank->sample_bank, sample->key, len) != 0) continue;
+        if (sample->key[len] != '/') continue;
+
         ser_align(ser, 16);
         sample->value.tbl_offset = ser->size - base;
         ser_add(ser, sample->value.data, sample->value.data_size);
@@ -603,9 +606,12 @@ static void sound_assemble(
         push(bank_ordered) = i;
 
         NameToIndexMap* found;
-        if ((found = find(indexes, &sound_bank_list[i]->sample_bank)))
+        if ((found = find(indexes, &sound_bank_list[i]->sample_bank))) {
+            sound_bank_list[i]->is_shared = true;
             push(bank_indexes) = found->value;
+        }
         else {
+            sound_bank_list[i]->is_shared = false;
             push(bank_indexes) = i;
             push(indexes) = (NameToIndexMap){ .key = sound_bank_list[i]->sample_bank, .value = i };
         }
@@ -647,15 +653,15 @@ static double parse_f80(const uint8_t* data) {
     return sign * mantissa * pow(2, exp_bits - 0x3FFF);
 }
 
-static void parse_aifc(const uint8_t* data, Aifc* out) {
-    uint32_t size;
-    data = unpack(">III", data, NULL, &size, NULL);
-
+static void parse_aifc(const uint8_t* data, size_t size, Aifc* out, const char* name) {
     const uint8_t* base = data;
-    while (data - base < size) {
+    data += 12;
+
+    while (data < base + size) {
         char section_magic[4];
         uint32_t section_length;
-        data = unpack(">II", data, &section_magic, &section_length);
+        data = unpack("I", data, &section_magic);
+        data = unpack(">I", data, &section_length);
 
         const uint8_t* section_base = data;
         if (strncmp(section_magic, "APPL", 4) == 0 && strncmp((const char*)data, "stoc", 4) == 0) {
@@ -685,8 +691,11 @@ static void append_custom_samples(set(NameToSampleMap)* extracted_samples) {
     foreach (*sample, gCustomSoundTable) {
         NameToSampleMap* entry = &push(*extracted_samples);
         entry->key = sample->name;
-        parse_aifc(sample->data, &entry->value);
+        parse_aifc(sample->data, sample->size, &entry->value, sample->name);
     }
+
+    // sort the map
+    find(*extracted_samples, &(char*){""});
 }
 
 static void copy_extended(set(NameToSampleMap)* samples) {
@@ -697,6 +706,7 @@ static void copy_extended(set(NameToSampleMap)* samples) {
         { "bowser_organ/01_organ_1_lq", "extended/01_organ_1_lq" },
         { "bowser_organ/02_boys_choir", "extended/02_boys_choir" },
         { "course_start/00_la", "extended/00_la" },
+        { "piranha_music_box/00_music_box", "extended/00_music_box" },
         { "instruments/00", "extended/00" },
         { "instruments/01_banjo_1", "extended/01_banjo_1" },
         { "instruments/02", "extended/02" },
@@ -770,7 +780,6 @@ static void copy_extended(set(NameToSampleMap)* samples) {
         { "instruments/46_pizzicato_strings_1", "extended/46_pizzicato_strings_1" },
         { "instruments/47_pizzicato_strings_2", "extended/47_pizzicato_strings_2" },
         { "instruments/48_steel_drum", "extended/48_steel_drum" },
-        { "piranha_music_box/00_music_box", "extended/00_music_box" },
     };
 
     foreach (*copy, copies) {

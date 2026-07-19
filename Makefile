@@ -410,47 +410,6 @@ ifeq ($(filter clean distclean,$(MAKECMDGOALS)),)
   $(info =======================)
 endif
 
-
-#==============================================================================#
-# Universal Dependencies                                                       #
-#==============================================================================#
-
-TOOLS_DIR := tools
-
-# (This is a bit hacky, but a lot of rules implicitly depend
-# on tools and assets, and we use directory globs further down
-# in the makefile that we want should cover assets.)
-
-PYTHON := python3
-
-ifeq ($(filter clean distclean print-%,$(MAKECMDGOALS)),)
-
-  # Make sure assets exist
-  #NOEXTRACT ?= 0
-  #ifeq ($(NOEXTRACT),0)
-  #  DUMMY != $(PYTHON) extract_assets.py $(VERSION) >&2 || echo FAIL
-  #  ifeq ($(DUMMY),FAIL)
-  #    $(error Failed to extract assets)
-  #  endif
-  #endif
-
-  ifeq ($(WINDOWS_AUTO_BUILDER),0)
-    $(info Building tools...)
-    DUMMY != $(MAKE) -C $(TOOLS_DIR) >&2 || echo FAIL
-      ifeq ($(DUMMY),FAIL)
-        $(error Failed to build tools)
-      endif
-  endif
-
-  DUMMY != $(TOOLS_DIR)/generate_inc_c >&2 || echo FAIL
-  ifeq ($(DUMMY),FAIL)
-  	$(error Failed to generate .inc.c files)
-  endif
-
-  $(info Building Game...)
-
-endif
-
 #==============================================================================#
 # Extra Source Files                                                           #
 #==============================================================================#
@@ -461,6 +420,9 @@ endif
 #==============================================================================#
 # Target Executable and Sources                                                #
 #==============================================================================#
+
+TOOLS_DIR := tools
+PYTHON := python3
 
 BUILD_DIR_BASE := build
 # BUILD_DIR is the location where all build artifacts are placed
@@ -642,6 +604,41 @@ GLOBAL_ASM_O_FILES = $(foreach file,$(GLOBAL_ASM_C_FILES),$(BUILD_DIR)/$(file:.c
 GLOBAL_ASM_DEP = $(BUILD_DIR)/src/audio/non_matching_dep
 endif
 
+#==============================================================================#
+# Universal Dependencies                                                       #
+#==============================================================================#
+
+# (This is a bit hacky, but a lot of rules implicitly depend
+# on tools and assets, and we use directory globs further down
+# in the makefile that we want should cover assets.)
+
+ifeq ($(filter clean distclean print-%,$(MAKECMDGOALS)),)
+
+  # Make sure assets exist
+  #NOEXTRACT ?= 0
+  #ifeq ($(NOEXTRACT),0)
+  #  DUMMY != $(PYTHON) extract_assets.py $(VERSION) >&2 || echo FAIL
+  #  ifeq ($(DUMMY),FAIL)
+  #    $(error Failed to extract assets)
+  #  endif
+  #endif
+
+  ifeq ($(WINDOWS_AUTO_BUILDER),0)
+    $(info Building tools...)
+    DUMMY != $(MAKE) -C $(TOOLS_DIR) >&2 || echo FAIL
+      ifeq ($(DUMMY),FAIL)
+        $(error Failed to build tools)
+      endif
+  endif
+
+  DUMMY != $(TOOLS_DIR)/generate_inc_c $(BUILD_DIR) >&2 || echo FAIL
+  ifeq ($(DUMMY),FAIL)
+  	$(error Failed to generate .inc.c files)
+  endif
+
+  $(info Building Game...)
+
+endif
 
 #==============================================================================#
 # Compiler Options                                                             #
@@ -1194,8 +1191,8 @@ $(BUILD_DIR)/sound/sequences/00_sound_player.m64.inc.c: $(BUILD_DIR)/sound/seque
 $(BUILD_DIR)/levels/scripts.o:        $(BUILD_DIR)/include/level_headers.h
 $(BUILD_DIR)/src/saturn/asset_extractor/sound.o: $(BUILD_DIR)/sound/custom_sounds.c
 $(BUILD_DIR)/src/saturn/asset_extractor/sound_data.o: $(BUILD_DIR)/sound/sequences/00_sound_player.m64.inc.c
-$(BUILD_DIR)/sound/custom_sounds.o: $(patsubst %,%.inc.c,$(CUSTOM_SOUNDS))
-$(BUILD_DIR)/sound/custom_sounds.o: $(patsubst %,%.inc.c,$(CUSTOM_SOUNDS))
+$(BUILD_DIR)/sound/custom_sounds.o: $(CUSTOM_SOUNDS) $(patsubst %,%.inc.c,$(CUSTOM_SOUNDS))
+$(BUILD_DIR)/sound/custom_sounds.o: $(CUSTOM_SOUNDS) $(patsubst %,%.inc.c,$(CUSTOM_SOUNDS))
 
 ifeq ($(VERSION),sh)
   $(BUILD_DIR)/src/audio/load.o: $(SOUND_BIN_DIR)/bank_sets.inc.c $(SOUND_BIN_DIR)/sequences_header.inc.c $(SOUND_BIN_DIR)/ctl_header.inc.c $(SOUND_BIN_DIR)/tbl_header.inc.c
@@ -1258,9 +1255,9 @@ TEXTURE_ENCODING := u8
 #	$(call print,Converting:,$<,$@)
 #	$(V)$(N64GRAPHICS) -s raw -i $@ -g $< -f $(lastword $(subst ., ,$@))
 
-#$(BUILD_DIR)/%.inc.c: %.png
-#	$(call print,Converting:,$<,$@)
-#	$(V)$(N64GRAPHICS) -s $(TEXTURE_ENCODING) -i $@ -g $< -f $(lastword ,$(subst ., ,$(basename $<)))
+$(BUILD_DIR)/%.inc.c: %.png
+	$(call print,Converting:,$<,$@)
+	$(V)$(N64GRAPHICS) -s $(TEXTURE_ENCODING) -i $@ -g $< -f $(lastword ,$(subst ., ,$(basename $<)))
 
 # Color Index CI8
 #$(BUILD_DIR)/%.ci8: %.ci8.png
@@ -1366,18 +1363,15 @@ $(SOUND_BIN_DIR)/%.m64: $(SOUND_BIN_DIR)/%.o
 #==============================================================================#
 
 # Convert binary file to a comma-separated list of byte values for inclusion in C code
-#$(BUILD_DIR)/%.inc.c: $(BUILD_DIR)/%
-#	$(call print,Piping:,$<,$@)
-#	$(V)hexdump -v -e '1/1 "0x%X,"' $< > $@
-#	$(V)echo >> $@
-
 $(BUILD_DIR)/%.inc.c: $(BUILD_DIR)/%
 	$(call print,Piping:,$<,$@)
 	$(V)hexdump -v -e '1/1 "0x%X,"' $< > $@
 	$(V)echo >> $@
 
 $(BUILD_DIR)/%.inc.c:
-	$(V)$(GENERATE_INC_C) $@
+	@$(PRINT) "$(GREEN)Generating: $(BLUE)$@ $(NO_COL)\n"
+	$(V)echo $(patsubst $(BUILD_DIR)/%.inc.c,%,$@) | hexdump -v -e '1/1 "0x%X,"' > $@
+	$(V)echo 0x00 >> $@
 
 # Generate animation data
 $(BUILD_DIR)/assets/mario_anim_data.c: $(wildcard assets/anims/*.inc.c)
