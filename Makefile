@@ -294,12 +294,11 @@ TARGET := sm64.$(VERSION)
 
 # Stuff for showing the git hash in the intro on nightly builds
 # From https://stackoverflow.com/questions/44038428/include-git-commit-hash-and-or-branch-name-in-c-c-source
-#ifeq ($(shell git rev-parse --abbrev-ref HEAD),nightly)
-#  GIT_HASH=`git rev-parse --short HEAD`
-#  COMPILE_TIME=`date -u +'%Y-%m-%d %H:%M:%S UTC'`
-#  DEFINES += -DNIGHTLY -DGIT_HASH="\"$(GIT_HASH)\"" -DCOMPILE_TIME="\"$(COMPILE_TIME)\""
-#endif
-
+ifeq ($(shell git rev-parse --abbrev-ref HEAD),nightly)
+    GIT_HASH = git rev-parse --short HEAD
+    COMPILE_TIME = date -u +'%Y-%m-%d %H:%M:%S UTC'
+    DEFINES += NIGHTLY GIT_HASH="\"$(shell $(GIT_HASH))\"" COMPILE_TIME="\"$(shell $(COMPILE_TIME))\""
+endif
 
 # GRUCODE - selects which RSP microcode to use.
 #   f3d_old - default for JP and US versions
