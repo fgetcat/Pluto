@@ -69,6 +69,8 @@ extern "C" {
     //#include "data/dynos.c.h"
 }
 
+namespace fs = std::filesystem;
+
 #include "data/dynos.cpp.h"
 
 SDL_Window* current_window = nullptr;
@@ -192,18 +194,31 @@ static void* imgui_build_thread_func(void* arg);
 void imgui_init() {
     // Create directories for Pluto content
     // These are located at %appdata%/Llennpie/Pluto on Windows, and ~/.local/share/Llennpie/Pluto on Linux
-    std::string user_path = sys_user_path();
-    std::error_code ec;
+    fs::path user_path = sys_user_path();
+    fs::path exec_path = sys_exe_path();
 
-    if (std::filesystem::exists("Panimotion.mp3", ec))
-        std::filesystem::copy_file("Panimotion.mp3", user_path + "/Panimotion.mp3",
-            std::filesystem::copy_options::skip_existing, ec);
+    fs::path dynos_src = exec_path / "dynos";
+    fs::path dynos_dst = user_path / "dynos";
 
-    std::filesystem::create_directories(user_path + "/dynos/colorcodes", ec);
-    std::filesystem::create_directories(user_path + "/dynos/anims", ec);
-    std::filesystem::create_directories(user_path + "/dynos/eyes", ec);
-    std::filesystem::create_directories(user_path + "/dynos/packs", ec);
-    pluto_animations_list = GetPAnimList(user_path + "/dynos/anims");
+    fs::create_directories(dynos_dst / "colorcodes");
+    fs::create_directories(dynos_dst / "anims");
+    fs::create_directories(dynos_dst / "eyes");
+    fs::create_directories(dynos_dst / "packs");
+    pluto_animations_list = GetPAnimList(dynos_dst / "anims");
+
+    if (fs::exists(dynos_src)) for (fs::path path : fs::recursive_directory_iterator(dynos_src)) {
+        if (fs::is_directory(path)) continue;
+
+        fs::path file = fs::relative(path, dynos_src);
+        fs::path dest = dynos_dst / file;
+        if (fs::exists(dest)) continue;
+
+        fs::create_directories(dest.parent_path());
+        fs::copy_file(path, dest);
+        printf("Copied %s\n", file.string().c_str());
+    }
+
+    fs::remove_all(dynos_src);
 }
 
 void imgui_init_backend(SDL_Window* window, SDL_GLContext ctx) {
@@ -792,8 +807,8 @@ void imgui_capture_screenshot(void* buffer) {
         glReadPixels(0, 0, gfx_current_dimensions.width, gfx_current_dimensions.height, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
 
         const char* path = sys_user_path();
-        std::filesystem::path new_path = std::filesystem::path(path) / "screenshots";
-        if (!std::filesystem::exists(new_path)) std::filesystem::create_directory(new_path);
+        fs::path new_path = fs::path(path) / "screenshots";
+        if (!fs::exists(new_path)) fs::create_directory(new_path);
         std::string filename = get_screenshot_name();
         new_path /= filename;
         stbi_write_png(new_path.generic_string().c_str(), gfx_current_dimensions.width, gfx_current_dimensions.height, 4, pixels, gfx_current_dimensions.width * 4);
@@ -850,7 +865,7 @@ void imgui_capture_screenshot(void* buffer) {
 #endif
         free(pixels);
 
-        studio_notif_info(filename.c_str(), "Saved screenshot to:\n%s/screenshots", std::filesystem::path(path).generic_string().c_str());
+        studio_notif_info(filename.c_str(), "Saved screenshot to:\n%s/screenshots", fs::path(path).generic_string().c_str());
     }
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
