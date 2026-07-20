@@ -1,0 +1,112 @@
+name: Build and Release
+
+on: workflow_dispatch
+
+jobs:
+  configure:
+    runs-on: ubuntu-latest
+    outputs:
+      version_number: ${{ steps.config.outputs.version_number }}
+      patch_notes: ${{ steps.config.outputs.patch_notes }}
+      
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+
+      - name: Generate config
+        id: config
+        run: |
+          PATCH_NOTES=$(cat PATCH_NOTES.md)
+          echo "version_number=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          echo "patch_notes<<EOF" >> $GITHUB_OUTPUT
+          echo "$PATCH_NOTES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+  release:
+    needs: [configure]
+    permissions: write-all
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.release.outputs.upload_url }}
+      release_id: ${{ steps.release.outputs.id }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+        
+      - name: Create a tag
+        env:
+          tag_name: ${{ needs.configure.outputs.version_number }}
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git tag $tag_name
+          git push origin $tag_name
+          
+      - name: Create a release
+        uses: avakar/tag-and-release@v1
+        id: release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ needs.configure.outputs.version_number }}
+          body: ${{ needs.configure.outputs.patch_notes }}
+          draft: true
+          prerelease: false
+
+  build:
+    needs: [release]
+    permissions: write-all
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-22.04, windows-latest]
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+
+      - name: Set up MSYS2
+        uses: msys2/setup-msys2@v2
+        if: matrix.os == 'windows-latest'
+
+      - name: Build (Linux)
+        if: matrix.os == 'ubuntu-22.04'
+        run: |
+          sudo apt update
+          sudo apt install -y build-essential python3 libglew-dev libsdl2-dev libcurl4-gnutls-dev curl pkgconf
+          make -j$(nproc)
+          cd build/us_pc
+          zip -r ../../release.zip sm64coopdx libbass.so libbass_fx.so libdiscord_game_sdk.so dynos lang mods Panimotion.mp3
+
+      - name: Build (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: msys2 {0}
+        run: |
+          pacman -S --noconfirm zip make git python3 mingw-w64-x86_64-gcc mingw-w64-x86_64-glew mingw-w64-x86_64-SDL2 mingw-w64-x86_64-curl pkgconf
+          make -j$(nproc)
+          cd build/us_pc
+          zip -r ../../release.zip sm64coopdx.exe bass.dll bass_fx.dll discord_game_sdk.dll dynos lang mods Panimotion.mp3
+
+      - name: Upload to release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.release.outputs.upload_url }}
+          asset_path: ./release.zip
+          asset_name: ${{ matrix.os == 'windows-latest' && 'windows.zip' || 'linux.zip' }}
+          asset_content_type: application/zip
+
+  publish:
+    needs: [build, release]
+    permissions: write-all
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Publish release
+        uses: eregon/publish-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          release_id: ${{ needs.release.outputs.release_id }}
