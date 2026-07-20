@@ -204,8 +204,6 @@ void imgui_init() {
     fs::create_directories(dynos_dst / "anims");
     fs::create_directories(dynos_dst / "eyes");
     fs::create_directories(dynos_dst / "packs");
-    pluto_animations_list = GetPAnimList(dynos_dst / "anims");
-
     if (fs::exists(dynos_src)) for (fs::path path : fs::recursive_directory_iterator(dynos_src)) {
         if (fs::is_directory(path)) continue;
 
@@ -219,6 +217,7 @@ void imgui_init() {
     }
 
     fs::remove_all(dynos_src);
+    pluto_animations_list = GetPAnimList((dynos_dst / "anims").string());
 }
 
 void imgui_init_backend(SDL_Window* window, SDL_GLContext ctx) {

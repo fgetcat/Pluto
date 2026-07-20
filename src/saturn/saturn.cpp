@@ -373,7 +373,7 @@ char* saturn_get_title_screen_song_path(const char* dst, const char* src) {
 
     if (fs::exists(dst_path)) strcpy(title_screen_path, dst_path.string().c_str());
     else if (fs::exists(src_path)) {
-        fs::copy_file(dst_path, src_path);
+        fs::copy_file(src_path, dst_path);
         strcpy(title_screen_path, dst_path.string().c_str());
     }
     else return NULL;
