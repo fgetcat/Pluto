@@ -15,4 +15,8 @@ assignees: ''
 
 ## __Bug Report__
 
+## __Expected Behavior__
+
 ## __Steps to Reproduce__
+
+## __Additional Context__
