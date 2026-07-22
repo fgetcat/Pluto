@@ -113,6 +113,7 @@ static struct ColorCombiner color_combiner_pool[CC_MAX_SHADERS] = { 0 };
 static uint8_t color_combiner_pool_size = 0;
 static uint8_t color_combiner_pool_index = 0;
 static struct ColorCombiner *prev_combiner = NULL;
+static bool near_clip_auto_snapshot_done = false;
 
 static struct RSP {
     float modelview_matrix_stack[11][4][4];
@@ -1245,6 +1246,12 @@ static void OPTIMIZE_O3 gfx_sp_tri1(uint8_t vtx1_idx, uint8_t vtx2_idx, uint8_t 
     struct ColorCombiner *comb = gfx_lookup_or_create_color_combiner(cm);
     cm = &comb->cm;
 
+    if (cm->near_clip && !near_clip_auto_snapshot_done) {
+        gfx_flush();
+        gfx_rapi->snapshot_depth();
+        near_clip_auto_snapshot_done = true;
+    }
+
     struct ShaderProgram *prg = comb->prg;
     if (prg != rendering_state.shader_program) {
         gfx_flush();
@@ -2121,6 +2128,7 @@ void gfx_start_frame(void) {
 
 void gfx_run(Gfx *commands) {
     gfx_sp_reset();
+    near_clip_auto_snapshot_done = false;
 
     //puts("New frame");
 

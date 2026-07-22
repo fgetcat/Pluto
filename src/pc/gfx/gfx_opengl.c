@@ -471,8 +471,8 @@ static struct ShaderProgram *gfx_opengl_create_and_load_new_shader(struct ColorC
         append_line(fs_buf, &fs_len, "float _range = uFarClip - uNearClip;");
         append_line(fs_buf, &fs_len, "float _lin_frag = (2.0*uNearClip*uFarClip) / (uFarClip + uNearClip - (2.0*gl_FragCoord.z - 1.0) * _range);");
         append_line(fs_buf, &fs_len, "float _lin_buf  = (2.0*uNearClip*uFarClip) / (uFarClip + uNearClip - (2.0*_buf_d - 1.0) * _range);");
-        // 5 world units
-        append_line(fs_buf, &fs_len, "if (_lin_frag > _lin_buf + 5.0) discard;");
+        // 15 world units
+        append_line(fs_buf, &fs_len, "if (_lin_frag > _lin_buf + 15.0) discard;");
     }
     append_line(fs_buf, &fs_len, "}");
 
