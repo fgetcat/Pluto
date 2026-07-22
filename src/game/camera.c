@@ -45,6 +45,7 @@
 static u8 sSoftResettingCamera = FALSE;
 u8 gCameraUseCourseSpecificSettings = TRUE;
 u8 gOverrideFreezeCamera = FALSE;
+u8 gExitCUpRequested = FALSE;
 enum RomhackCameraOverride gOverrideRomhackCamera = RCO_ALL;
 u8 gRomhackCameraAllowCentering = TRUE;
 u8 gOverrideAllowToxicGasCamera = FALSE;
@@ -2977,6 +2978,7 @@ void set_camera_mode(struct Camera *c, s16 mode, s16 frames) {
 
     if (mode == CAMERA_MODE_C_UP && gLakituState.mode == CAMERA_MODE_NEWCAM) {
         newcam_init_settings_override(false);
+        c->mode = gLakituState.mode;
     }
 
     if (mode != CAMERA_MODE_NEWCAM && gLakituState.mode != CAMERA_MODE_NEWCAM) {
@@ -3001,13 +3003,23 @@ void set_camera_mode(struct Camera *c, s16 mode, s16 frames) {
             c->mode = sModeInfo.newMode;
             gLakituState.mode = c->mode;
 
+            if (sModeInfo.lastMode == CAMERA_MODE_C_UP) {
+                // fix newcam c-up breaking on dialog read
+                gCameraMovementFlags &= ~(CAM_MOVE_STARTED_EXITING_C_UP | CAM_MOVE_C_UP_MODE);
+                newcam_init_settings();
+                if (newcam_active) {
+                    c->mode = CAMERA_MODE_NEWCAM;
+                    gLakituState.mode = CAMERA_MODE_NEWCAM;
+                }
+            }
+
             vec3f_copy(end->focus, c->focus);
             vec3f_sub(end->focus, sMarioCamState->pos);
 
             vec3f_copy(end->pos, c->pos);
             vec3f_sub(end->pos, sMarioCamState->pos);
 
-            if (sModeInfo.newMode != CAMERA_MODE_NONE && (u32)sModeInfo.newMode < sizeof(sModeTransitions) / sizeof(sModeTransitions[0])) {
+            if (sModeInfo.newMode != CAMERA_MODE_NONE && (u32)sModeInfo.newMode < sizeof(sModeTransitions) / sizeof(sModeTransitions[0]) && sModeTransitions[sModeInfo.newMode] != NULL) {
                 sAreaYaw = sModeTransitions[sModeInfo.newMode](c, end->focus, end->pos);
             }
 
@@ -3265,6 +3277,7 @@ void update_camera(struct Camera *c) {
                 }
                 if (gPlayer1Controller->buttonPressed & D_CBUTTONS || gPlayer1Controller->buttonPressed & B_BUTTON) {
                     exit_c_up(c);
+                    gExitCUpRequested = TRUE;
                     if ((gPlayer1Controller->buttonDown & R_TRIG) == 0) {
                         sCUpCameraPitch = 0;
                         sModeOffsetYaw = 0;
