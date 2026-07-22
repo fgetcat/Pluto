@@ -112,6 +112,7 @@ static struct {
 static struct ColorCombiner color_combiner_pool[CC_MAX_SHADERS] = { 0 };
 static uint8_t color_combiner_pool_size = 0;
 static uint8_t color_combiner_pool_index = 0;
+static struct ColorCombiner *prev_combiner = NULL;
 
 static struct RSP {
     float modelview_matrix_stack[11][4][4];
@@ -353,7 +354,6 @@ static void gfx_generate_cc(struct ColorCombiner *cc) {
 static struct ColorCombiner *gfx_lookup_or_create_color_combiner(struct CombineMode* cm) {
     combine_mode_update_hash(cm);
 
-    static struct ColorCombiner *prev_combiner;
     if (prev_combiner != NULL && prev_combiner->cm.hash == cm->hash) {
         return prev_combiner;
     }
@@ -378,6 +378,12 @@ static struct ColorCombiner *gfx_lookup_or_create_color_combiner(struct CombineM
 
 void gfx_texture_cache_clear(void) {
     memset(&gfx_texture_cache, 0, sizeof(gfx_texture_cache));
+}
+
+void gfx_shader_cache_clear(void) {
+    color_combiner_pool_size = 0;
+    color_combiner_pool_index = 0;
+    prev_combiner = NULL;
 }
 
 static bool gfx_texture_cache_lookup(int tile, struct TextureHashmapNode **n, const uint8_t *orig_addr, uint32_t fmt, uint32_t siz) {

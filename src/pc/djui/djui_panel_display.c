@@ -2,6 +2,7 @@
 #include "djui_panel.h"
 #include "djui_panel_menu.h"
 #include "pc/gfx/gfx_window_manager_api.h"
+#include "pc/gfx/gfx_pc.h"
 #include "pc/pc_main.h"
 #include "pc/utils/misc.h"
 #include "pc/configfile.h"
@@ -33,6 +34,10 @@ static void djui_panel_display_frame_limit_text_change(struct DjuiBase* caller) 
         djui_inputbox_set_text_color(inputbox1, 255, 0, 0, 255);
     }
     djui_base_set_enabled(&sInterpolationSelectionBox->base, (configFrameLimit > 30 || (configFrameLimit <= 30 && configUncappedFramerate)));
+}
+
+static void djui_panel_display_filtering_change(UNUSED struct DjuiBase* caller) {
+    gfx_shader_cache_clear();
 }
 
 static void djui_panel_display_msaa_change(UNUSED struct DjuiBase* caller) {
@@ -92,7 +97,7 @@ void djui_panel_display_create(struct DjuiBase* caller) {
         sInterpolationSelectionBox = selectionbox1;
 
         char* filterChoices[3] = { DLANG(DISPLAY, NEAREST), DLANG(DISPLAY, LINEAR), DLANG(DISPLAY, TRIPOINT) };
-        djui_selectionbox_create(body, DLANG(DISPLAY, FILTERING), filterChoices, 3, &configFiltering, NULL);
+        djui_selectionbox_create(body, DLANG(DISPLAY, FILTERING), filterChoices, 3, &configFiltering, djui_panel_display_filtering_change);
 
         int maxMsaa = wm_api->get_max_msaa();
         if (maxMsaa >= 4) {

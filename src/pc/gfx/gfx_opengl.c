@@ -58,6 +58,7 @@ struct ShaderProgram {
     uint8_t num_attribs;
     bool used_noise;
     bool used_near_clip;
+    uint8_t filtering_mode;
 };
 
 struct GLTexture {
@@ -558,6 +559,7 @@ static struct ShaderProgram *gfx_opengl_create_and_load_new_shader(struct ColorC
     }
 
     prg->hash = cc->hash;
+    prg->filtering_mode = (uint8_t)configFiltering;
     prg->opengl_program_id = shader_program;
     prg->num_inputs = ccf.num_inputs;
     prg->used_textures[0] = ccf.used_textures[0];
@@ -603,7 +605,8 @@ static struct ShaderProgram *gfx_opengl_create_and_load_new_shader(struct ColorC
 
 static struct ShaderProgram *gfx_opengl_lookup_shader(struct ColorCombiner* cc) {
     for (size_t i = 0; i < shader_program_pool_size; i++) {
-        if (shader_program_pool[i].hash == cc->hash) {
+        if (shader_program_pool[i].hash == cc->hash &&
+            shader_program_pool[i].filtering_mode == (uint8_t)configFiltering) {
             return &shader_program_pool[i];
         }
     }
