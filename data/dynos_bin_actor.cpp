@@ -16,8 +16,8 @@ static void DynOS_Bones_Read(GfxData *aGfxData, const SysPath &aFilename) {
         }
     }
     fclose(f);
-    if (!aGfxData->mBoneNames.Empty())
-        PrintConsole("  Bone names: %d bones\n", aGfxData->mBoneNames.Count());
+    //if (!aGfxData->mBoneNames.Empty())
+        //PrintConsole("  Bone names: %d bones\n", aGfxData->mBoneNames.Count());
 }
 // Delete nodes generated from GfxDynCmds
 template <typename T>
@@ -151,7 +151,7 @@ GfxData *DynOS_Actor_LoadFromBinary(const SysPath &aPackFolder, const char *aAct
                     _GfxData->mModelName.Read(_File);
                     _GfxData->mModelAuthor.Read(_File);
                     _GfxData->mModelVersion.Read(_File);
-                    PrintConsole("  Metadata: Name = \"%s\", Author = \"%s\", Version = \"%s\"\n", _GfxData->mModelName.begin(), _GfxData->mModelAuthor.begin(), _GfxData->mModelVersion.begin());
+                    //PrintConsole("  Metadata: Name = \"%s\", Author = \"%s\", Version = \"%s\"\n", _GfxData->mModelName.begin(), _GfxData->mModelAuthor.begin(), _GfxData->mModelVersion.begin());
                     break;
                 case DATA_TYPE_BONE_NAMES: {
                     u32 count = _File->Read<u32>();
@@ -160,7 +160,7 @@ GfxData *DynOS_Actor_LoadFromBinary(const SysPath &aPackFolder, const char *aAct
                         name.Read(_File);
                         _GfxData->mBoneNames.Add(name);
                     }
-                    PrintConsole("  Loaded %u bone name(s)\n", count);
+                    //PrintConsole("  Loaded %u bone name(s)\n", count);
                     break;
                 }
                 case DATA_TYPE_BIN_VERSION:

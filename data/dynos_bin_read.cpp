@@ -178,7 +178,7 @@ void DynOS_Read_Source(GfxData *aGfxData, const SysPath &aFilename) {
                         modelName.Remove(modelName.Length() - 1);
                     }
                     aGfxData->mModelName = modelName;
-                    PrintConsole("Name: \"%s\"\n", modelName.begin());
+                    //PrintConsole("Name: \"%s\"\n", modelName.begin());
                     c = peek;
                 } else if (_Buffer == "Author") {
                     char* peek = c;
@@ -193,7 +193,7 @@ void DynOS_Read_Source(GfxData *aGfxData, const SysPath &aFilename) {
                         modelAuthor.Remove(modelAuthor.Length() - 1);
                     }
                     aGfxData->mModelAuthor = modelAuthor;
-                    PrintConsole("Author: \"%s\"\n", modelAuthor.begin());
+                    //PrintConsole("Author: \"%s\"\n", modelAuthor.begin());
                     c = peek;
                 } else if (_Buffer == "Version") {
                     char* peek = c;
@@ -204,7 +204,7 @@ void DynOS_Read_Source(GfxData *aGfxData, const SysPath &aFilename) {
                         peek++;
                     }
                     aGfxData->mModelVersion = modelVersion;
-                    PrintConsole("Version: \"%s\"\n", modelVersion.begin());
+                    //PrintConsole("Version: \"%s\"\n", modelVersion.begin());
                     c = peek;
                 } else if (_Buffer == "static") {
                     // Ignore static keyword
