@@ -77,6 +77,8 @@ jobs:
         uses: msys2/setup-msys2@v2
         with:
           msystem: UCRT64
+          install: >-
+            make
         if: matrix.os == 'windows-latest'
 
       - name: Build (Linux)
