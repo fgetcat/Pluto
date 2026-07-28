@@ -3,15 +3,15 @@
 DEPENDENCIES_VERSION=1
 
 if [ "$(cat .deps 2> /dev/null || echo 0)" -ge "$DEPENDENCIES_VERSION" ]; then exit 0; fi
-function exists {
+exists() {
     command -v $1 > /dev/null 2>&1
 }
 
-function find_sudo {
+find_sudo() {
     command -v sudo || command -v doas || (echo Cannot find sudo or doas; exit 1)
 }
 
-function fail {
+fail() {
     echo Unable to install required packages for building
     exit 1
 }
