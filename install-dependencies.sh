@@ -23,11 +23,11 @@ echo Installing dependencies...
 # MINGW64
 if [ "$MSYSTEM" == "MINGW64" ]; then
     PREFIX=mingw-w64-x86_64
-    pacman -S $PREFIX-gcc $PREFIX-SDL2 $PREFIX-glew $PREFIX-openssl $PREFIX-pkg-config python3 || fail
+    pacman -S --noconfirm $PREFIX-gcc $PREFIX-SDL2 $PREFIX-glew $PREFIX-openssl $PREFIX-pkg-config python3 || fail
 # UCRT64
 elif [ "$MSYSTEM" == "UCRT64" ]; then
     PREFIX=mingw-w64-ucrt-x86_64
-    pacman -S $PREFIX-gcc $PREFIX-SDL2 $PREFIX-glew $PREFIX-openssl $PREFIX-pkg-config python3 || fail
+    pacman -S --noconfirm $PREFIX-gcc $PREFIX-SDL2 $PREFIX-glew $PREFIX-openssl $PREFIX-pkg-config python3 || fail
 # Linux
 elif [ -z "$MSYSTEM" ]; then
     SUDO=$(find_sudo)
