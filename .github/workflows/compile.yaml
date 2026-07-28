@@ -88,10 +88,10 @@ jobs:
           zip -r ../../release.zip sm64coopdx libbass.so libbass_fx.so libdiscord_game_sdk.so dynos lang mods Panimotion.mp3
 
       - name: Build (Windows)
-        if: matrix.os == 'windows-latest'
-        shell: msys2 {0}
         with:
           msystem: UCRT64
+        if: matrix.os == 'windows-latest'
+        shell: msys2 {0}
         run: |
           make PLUTO_UPDATER=1 -j$(nproc)
           cd build/us_pc

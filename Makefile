@@ -115,13 +115,15 @@ ifeq ($(HOST_OS),Windows)
 endif
 
 # Check Windows build environment
-ifeq ($(MSYSTEM),MINGW64)
-    ifeq ($(PLUTO_UPDATER),1)
-        $(warning Building with MINGW64: The updater is force-disabled)
+ifeq ($(WINDOWS_BUILD),1)
+    ifeq ($(MSYSTEM),MINGW64)
+        ifeq ($(PLUTO_UPDATER),1)
+            $(warning Building with MINGW64: The updater is force-disabled)
+        endif
+        PLUTO_UPDATER := 0
+    else ifneq ($(MSYSTEM),UCRT64)
+        $(error $(MSYSTEM) is not supported, please use UCRT64 or MINGW64)
     endif
-    PLUTO_UPDATER := 0
-else ifneq ($(MSYSTEM),UCRT64)
-    $(error $(MSYSTEM) is not supported, please use UCRT64 or MINGW64)
 endif
 
 # MXE overrides
