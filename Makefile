@@ -931,13 +931,6 @@ endif
 # Zlib
 LDFLAGS += -lz
 
-# Update checker library
-ifeq ($(WINDOWS_BUILD),1)
-  LDFLAGS += -lwininet
-else
-  LDFLAGS += $(shell curl-config --libs)
-endif
-
 # Lua
 ifeq ($(WINDOWS_BUILD),1)
   ifeq ($(TARGET_BITS), 32)
@@ -1014,7 +1007,12 @@ endif
 
 LDFLAGS += -lstdc++
 ifeq ($(PLUTO_UPDATER),1)
-    LDFLAGS += -lssl -lcrypto
+    ifeq ($(WINDOWS_BUILD),1)
+        LDFLAGS += `pkgconf --static --libs openssl`
+    else
+        LDFLAGS += -lssl -lcrypto
+    endif
+    CFLAGS += -DHAVE_OPENSSL
 endif
 
 # Prevent a crash with -sopt
