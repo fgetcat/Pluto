@@ -79,6 +79,7 @@ jobs:
           msystem: UCRT64
           install: >-
             make
+            zip
         if: matrix.os == 'windows-latest'
 
       - name: Build (Linux)
