@@ -1008,7 +1008,7 @@ endif
 LDFLAGS += -lstdc++
 ifeq ($(PLUTO_UPDATER),1)
     ifeq ($(WINDOWS_BUILD),1)
-        LDFLAGS += `pkgconf --static --libs openssl`
+        LDFLAGS += `pkg-config --static --libs openssl`
     else
         LDFLAGS += -lssl -lcrypto
     endif
